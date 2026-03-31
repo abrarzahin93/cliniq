@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { WARD_BOOK_SECTIONS } from './wardbook.js'
 
 // ─── Theme ───────────────────────────────────────────────────────────
@@ -29,6 +29,11 @@ const s = {
   btn: (bg, color = '#fff') => ({
     padding: '10px 20px', border: 'none', borderRadius: 8, cursor: 'pointer',
     fontWeight: 600, fontSize: 14, color, background: bg,
+    transition: 'all 0.2s', fontFamily: T.sans,
+  }),
+  btnSm: (bg, color = '#fff') => ({
+    padding: '6px 14px', border: 'none', borderRadius: 6, cursor: 'pointer',
+    fontWeight: 600, fontSize: 12, color, background: bg,
     transition: 'all 0.2s', fontFamily: T.sans,
   }),
   btnOutline: {
@@ -98,6 +103,47 @@ const s = {
     background: '#fff', color: '#111', padding: 40, borderRadius: 4,
     fontFamily: T.sans, maxWidth: 700, margin: '0 auto',
   },
+  statBox: (color) => ({
+    background: T.card, border: `1px solid ${T.cardBorder}`, borderRadius: 12,
+    padding: '16px 20px', flex: 1, minWidth: 140, borderLeft: `3px solid ${color}`,
+  }),
+  medexLink: {
+    color: T.accent, fontSize: 11, fontFamily: T.mono, textDecoration: 'none',
+    padding: '2px 8px', border: `1px solid ${T.accent}40`, borderRadius: 4,
+    display: 'inline-block', transition: 'all 0.2s',
+  },
+}
+
+// ─── localStorage ────────────────────────────────────────────────────
+const LS_KEY = 'cliniq_patient_log'
+
+function loadPatientLog() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') }
+  catch { return [] }
+}
+
+function savePatientLog(log) {
+  localStorage.setItem(LS_KEY, JSON.stringify(log))
+}
+
+function addToLog(entry) {
+  const log = loadPatientLog()
+  log.unshift(entry)
+  savePatientLog(log)
+  return log
+}
+
+function updateLogEntry(id, updates) {
+  const log = loadPatientLog()
+  const idx = log.findIndex(e => e.id === id)
+  if (idx !== -1) log[idx] = { ...log[idx], ...updates }
+  savePatientLog(log)
+  return log
+}
+
+// ─── MedEx helpers ───────────────────────────────────────────────────
+function medexSearchUrl(drugName) {
+  return `https://medex.com.bd/brands?search=${encodeURIComponent(drugName)}`
 }
 
 // ─── API ─────────────────────────────────────────────────────────────
@@ -121,13 +167,12 @@ function searchWardBook(diagnosis) {
     }
     return { ...section, score }
   }).filter(s => s.score > 0).sort((a, b) => b.score - a.score)
-  // Return top matches, capped at ~20K chars to stay within context
   const results = []
   let totalLen = 0
-  for (const s of scored) {
-    if (totalLen + s.content.length > 20000) break
-    results.push(s)
-    totalLen += s.content.length
+  for (const sec of scored) {
+    if (totalLen + sec.content.length > 20000) break
+    results.push(sec)
+    totalLen += sec.content.length
   }
   return results
 }
@@ -199,6 +244,13 @@ function buildPatientSummary(p) {
   return lines.join('\n')
 }
 
+function todayStr() { return new Date().toISOString().slice(0, 10) }
+
+function formatTime(iso) {
+  const d = new Date(iso)
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
 // ─── Components ──────────────────────────────────────────────────────
 function Field({ label, children }) {
   return (
@@ -240,7 +292,7 @@ function Step1({ p, setP }) {
   return (
     <>
       <div style={s.stepTitle}>Step 1 — Patient Particulars</div>
-      <div style={{ ...s.grid(2), '@media(maxWidth:600px)': s.grid(1) }}>
+      <div style={s.grid(2)}>
         <InputField label="Patient Name" value={p.name} onChange={v => setP({ ...p, name: v })} placeholder="Full name" />
         <InputField label="Age" value={p.age} onChange={v => setP({ ...p, age: v })} placeholder="Years" type="number" />
       </div>
@@ -439,7 +491,7 @@ function TreatmentTab({ tx }) {
 function PrescriptionTab({ patient, dx, tx }) {
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+      <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button style={s.btn(T.accent)} onClick={() => window.print()}>
           Print Prescription
         </button>
@@ -470,7 +522,18 @@ function PrescriptionTab({ patient, dx, tx }) {
             {tx?.medications?.map((med, i) => (
               <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
                 <td style={{ padding: '8px 6px' }}>{i + 1}</td>
-                <td style={{ padding: '8px 6px', fontWeight: 600 }}>{med.drug}</td>
+                <td style={{ padding: '8px 6px' }}>
+                  <span style={{ fontWeight: 600 }}>{med.drug}</span>
+                  <br />
+                  <a
+                    href={medexSearchUrl(med.drug)}
+                    target="_blank" rel="noopener noreferrer"
+                    className="no-print"
+                    style={{ color: '#0ea5e9', fontSize: 10, textDecoration: 'none' }}
+                  >
+                    Find BD Trade Names &rarr;
+                  </a>
+                </td>
                 <td style={{ padding: '8px 6px' }}>{med.dose}</td>
                 <td style={{ padding: '8px 6px' }}>{med.route}</td>
                 <td style={{ padding: '8px 6px' }}>{med.frequency}</td>
@@ -486,6 +549,329 @@ function PrescriptionTab({ patient, dx, tx }) {
             <div style={{ fontSize: 12, color: '#666' }}>Clinician Signature</div>
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Follow-up Scheduler ─────────────────────────────────────────────
+function FollowUpScheduler({ logId, currentFollowUp, onSave }) {
+  const [date, setDate] = useState(currentFollowUp?.date || '')
+  const [notes, setNotes] = useState(currentFollowUp?.notes || '')
+
+  const handleSave = () => {
+    if (!date) return
+    onSave(logId, { followUp: { scheduled: true, date, notes, completed: false } })
+  }
+
+  if (currentFollowUp?.scheduled && !currentFollowUp?.completed) {
+    return (
+      <div style={{ ...s.card, borderLeft: `3px solid ${T.amber}` }}>
+        <div style={s.label}>Follow-up Scheduled</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span style={s.badge(T.amber, T.amberDim)}>{currentFollowUp.date}</span>
+          {currentFollowUp.notes && (
+            <span style={{ fontSize: 13, color: T.textDim }}>{currentFollowUp.notes}</span>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ ...s.card, borderLeft: `3px solid ${T.accent}` }}>
+      <div style={s.label}>Schedule Follow-up</div>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <label style={{ ...s.label, fontSize: 10 }}>Date</label>
+          <input
+            type="date" value={date} onChange={e => setDate(e.target.value)}
+            min={todayStr()}
+            style={{ ...s.input, colorScheme: 'dark' }}
+          />
+        </div>
+        <div style={{ flex: 2, minWidth: 200 }}>
+          <label style={{ ...s.label, fontSize: 10 }}>Notes (optional)</label>
+          <input
+            type="text" value={notes} onChange={e => setNotes(e.target.value)}
+            placeholder="Review labs, adjust meds..."
+            style={s.input}
+          />
+        </div>
+        <button style={s.btn(T.accent)} onClick={handleSave}>Schedule</button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Dashboard ───────────────────────────────────────────────────────
+function Dashboard({ patientLog, setPatientLog, onLoadPatient, onViewDetail }) {
+  const [search, setSearch] = useState('')
+  const today = todayStr()
+
+  const todaysPatients = useMemo(() =>
+    patientLog.filter(e => e.date === today),
+    [patientLog, today]
+  )
+
+  const followUpsDue = useMemo(() =>
+    patientLog.filter(e => e.followUp?.scheduled && e.followUp.date === today && !e.followUp.completed),
+    [patientLog, today]
+  )
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return patientLog
+    const q = search.toLowerCase()
+    return patientLog.filter(e =>
+      (e.patient?.name || '').toLowerCase().includes(q) ||
+      (e.dxResult?.primary_diagnosis || '').toLowerCase().includes(q)
+    )
+  }, [patientLog, search])
+
+  const markFollowUpComplete = (id) => {
+    const entry = patientLog.find(e => e.id === id)
+    if (!entry) return
+    const updated = updateLogEntry(id, { followUp: { ...entry.followUp, completed: true } })
+    setPatientLog(updated)
+  }
+
+  const totalPatients = patientLog.length
+
+  return (
+    <div>
+      {/* Stats */}
+      <div className="cliniq-stats-row" style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
+        <div style={s.statBox(T.accent)}>
+          <div style={{ ...s.label, marginBottom: 4 }}>Today</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: T.text, fontFamily: T.mono }}>{todaysPatients.length}</div>
+          <div style={{ fontSize: 12, color: T.textMuted }}>patients seen</div>
+        </div>
+        <div style={s.statBox(T.amber)}>
+          <div style={{ ...s.label, marginBottom: 4 }}>Follow-ups</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: T.amber, fontFamily: T.mono }}>{followUpsDue.length}</div>
+          <div style={{ fontSize: 12, color: T.textMuted }}>due today</div>
+        </div>
+        <div style={s.statBox(T.green)}>
+          <div style={{ ...s.label, marginBottom: 4 }}>Total</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: T.text, fontFamily: T.mono }}>{totalPatients}</div>
+          <div style={{ fontSize: 12, color: T.textMuted }}>all records</div>
+        </div>
+      </div>
+
+      {/* Follow-ups Due */}
+      {followUpsDue.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ ...s.label, color: T.amber, fontSize: 13, marginBottom: 12 }}>Follow-ups Due Today</div>
+          {followUpsDue.map(entry => (
+            <div key={entry.id} style={{ ...s.card, borderLeft: `3px solid ${T.amber}`, padding: '16px 20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 16, color: T.text }}>{entry.patient?.name || 'Unknown'}</div>
+                  <div style={{ fontSize: 13, color: T.textDim, marginTop: 2 }}>
+                    {entry.patient?.age} / {entry.patient?.sex} &middot; Dx: {entry.dxResult?.primary_diagnosis}
+                  </div>
+                  {entry.followUp?.notes && (
+                    <div style={{ fontSize: 13, color: T.amber, marginTop: 4 }}>Note: {entry.followUp.notes}</div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button style={s.btnSm(T.accent)} onClick={() => onLoadPatient(entry)}>Load Patient</button>
+                  <button style={s.btnSm(T.green)} onClick={() => markFollowUpComplete(entry.id)}>Mark Complete</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Today's Patients */}
+      {todaysPatients.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ ...s.label, fontSize: 13, marginBottom: 12 }}>Today's Patients</div>
+          {todaysPatients.map(entry => (
+            <div
+              key={entry.id}
+              onClick={() => onViewDetail(entry)}
+              style={{ ...s.card, padding: '14px 20px', cursor: 'pointer', transition: 'border-color 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = T.accent}
+              onMouseLeave={e => e.currentTarget.style.borderColor = T.cardBorder}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontFamily: T.mono, fontSize: 12, color: T.textMuted, minWidth: 60 }}>
+                    {formatTime(entry.timestamp)}
+                  </span>
+                  <div>
+                    <span style={{ fontWeight: 600, color: T.text }}>{entry.patient?.name || 'Unknown'}</span>
+                    <span style={{ color: T.textMuted, fontSize: 13, marginLeft: 8 }}>
+                      {entry.patient?.age}/{entry.patient?.sex}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 13, color: T.textDim }}>{entry.dxResult?.primary_diagnosis}</span>
+                  {entry.dxResult?.confidence && <ConfidenceBadge level={entry.dxResult.confidence} />}
+                  {entry.followUp?.scheduled && !entry.followUp?.completed && (
+                    <span style={s.badge(T.amber, T.amberDim)}>F/U {entry.followUp.date}</span>
+                  )}
+                  {entry.followUp?.completed && (
+                    <span style={s.badge(T.green, T.greenDim)}>F/U done</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Patient History */}
+      <div>
+        <div style={{ ...s.label, fontSize: 13, marginBottom: 12 }}>Patient History</div>
+        <input
+          type="text" value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Search by name or diagnosis..."
+          style={{ ...s.input, maxWidth: 400, marginBottom: 16 }}
+          onFocus={e => e.target.style.borderColor = T.accent}
+          onBlur={e => e.target.style.borderColor = T.cardBorder}
+        />
+        {filtered.length === 0 ? (
+          <div style={{ ...s.card, textAlign: 'center', color: T.textMuted, padding: 40 }}>
+            {patientLog.length === 0 ? 'No patient records yet. Complete a consultation to see records here.' : 'No matching records.'}
+          </div>
+        ) : (
+          filtered.slice(0, 50).map(entry => (
+            <div
+              key={entry.id}
+              onClick={() => onViewDetail(entry)}
+              style={{ ...s.card, padding: '12px 20px', cursor: 'pointer', transition: 'border-color 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = T.accent}
+              onMouseLeave={e => e.currentTarget.style.borderColor = T.cardBorder}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontFamily: T.mono, fontSize: 11, color: T.textMuted, minWidth: 80 }}>
+                    {entry.date}
+                  </span>
+                  <span style={{ fontWeight: 600, color: T.text, fontSize: 14 }}>{entry.patient?.name || 'Unknown'}</span>
+                  <span style={{ color: T.textMuted, fontSize: 12 }}>{entry.patient?.age}/{entry.patient?.sex}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 12, color: T.textDim }}>{entry.dxResult?.primary_diagnosis}</span>
+                  <span style={s.badge(T.textDim, T.cardBorder)}>{entry.treatmentType || 'dx only'}</span>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Patient Detail View ─────────────────────────────────────────────
+function PatientDetailView({ entry, onClose, onUpdateLog, onLoadPatient }) {
+  const [activeTab, setActiveTab] = useState('diagnosis')
+  const { patient, dxResult, txResult } = entry
+
+  const tabs = [
+    { id: 'diagnosis', label: 'Diagnosis', show: !!dxResult },
+    { id: 'investigations', label: 'Investigations', show: !!dxResult?.investigations },
+    { id: 'treatment', label: 'Treatment', show: !!txResult },
+    { id: 'medications', label: 'Medications + BD Prices', show: !!txResult?.medications },
+  ].filter(t => t.show)
+
+  const handleFollowUpSave = (id, updates) => {
+    onUpdateLog(id, updates)
+  }
+
+  return (
+    <div>
+      {/* Back bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+        <button style={s.btnOutline} onClick={onClose}>&larr; Back to Dashboard</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button style={s.btnSm(T.accent)} onClick={() => onLoadPatient(entry)}>Load for New Consultation</button>
+        </div>
+      </div>
+
+      {/* Patient summary */}
+      <div style={{ ...s.card, borderLeft: `3px solid ${T.accent}` }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: T.text }}>{patient?.name || 'Unknown'}</div>
+            <div style={{ fontSize: 13, color: T.textDim, marginTop: 4 }}>
+              {patient?.age} yrs / {patient?.sex} &middot; {patient?.weight ? `${patient.weight} kg` : ''} &middot; Seen: {entry.date} at {formatTime(entry.timestamp)}
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {dxResult?.confidence && <ConfidenceBadge level={dxResult.confidence} />}
+            {entry.treatmentType && <span style={s.badge(T.textDim, T.cardBorder)}>{entry.treatmentType}</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      {tabs.length > 0 && (
+        <>
+          <div className="cliniq-tabs" style={{ display: 'flex', gap: 4, borderBottom: `1px solid ${T.cardBorder}`, marginBottom: 20 }}>
+            {tabs.map(t => (
+              <button key={t.id} style={s.tab(activeTab === t.id)} onClick={() => setActiveTab(t.id)}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div style={s.card}>
+            {activeTab === 'diagnosis' && dxResult && <DiagnosisTab dx={dxResult} />}
+            {activeTab === 'investigations' && dxResult && <InvestigationsTab inv={dxResult.investigations} />}
+            {activeTab === 'treatment' && txResult && <TreatmentTab tx={txResult} />}
+            {activeTab === 'medications' && txResult && (
+              <MedicationsWithPrices medications={txResult.medications} />
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Follow-up */}
+      <FollowUpScheduler
+        logId={entry.id}
+        currentFollowUp={entry.followUp}
+        onSave={handleFollowUpSave}
+      />
+    </div>
+  )
+}
+
+// ─── Medications with BD Prices ──────────────────────────────────────
+function MedicationsWithPrices({ medications }) {
+  return (
+    <div>
+      <div style={s.label}>Medications — Bangladesh Trade Names &amp; Prices</div>
+      <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 16 }}>
+        Click "MedEx" to find Bangladeshi trade names, manufacturers, and current prices on medex.com.bd
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {medications?.map((med, i) => (
+          <div key={i} style={{ ...s.card, padding: '16px 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 16, color: T.text }}>{med.drug}</div>
+                <div style={{ fontSize: 13, color: T.textDim, marginTop: 4 }}>
+                  {med.dose} &middot; {med.route} &middot; {med.frequency} &middot; {med.duration}
+                </div>
+                {med.notes && <div style={{ fontSize: 12, color: T.textMuted, marginTop: 4 }}>{med.notes}</div>}
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <a
+                  href={medexSearchUrl(med.drug)}
+                  target="_blank" rel="noopener noreferrer"
+                  style={s.medexLink}
+                >
+                  MedEx — BD Trade Names &amp; Prices
+                </a>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -508,6 +894,10 @@ if (typeof document !== 'undefined' && !document.getElementById('cliniq-responsi
       .cliniq-grid-3 { grid-template-columns: 1fr !important; }
       .cliniq-grid-2 { grid-template-columns: 1fr !important; }
       .cliniq-tabs { flex-wrap: wrap !important; }
+      .cliniq-stats-row { flex-direction: column !important; }
+    }
+    @media print {
+      .no-print { display: none !important; }
     }
   `
   document.head.appendChild(style)
@@ -523,14 +913,18 @@ const INITIAL_PATIENT = {
 }
 
 export default function App() {
+  const [view, setView] = useState('consultation') // consultation | dashboard
   const [showDisclaimer, setShowDisclaimer] = useState(true)
   const [step, setStep] = useState(0)
   const [patient, setPatient] = useState(INITIAL_PATIENT)
-  const [phase, setPhase] = useState('intake') // intake | diagnosing | diagnosed | treating | treated
+  const [phase, setPhase] = useState('intake')
   const [dxResult, setDxResult] = useState(null)
   const [txResult, setTxResult] = useState(null)
   const [activeTab, setActiveTab] = useState('diagnosis')
   const [error, setError] = useState(null)
+  const [patientLog, setPatientLog] = useState(() => loadPatientLog())
+  const [currentLogId, setCurrentLogId] = useState(null)
+  const [selectedEntry, setSelectedEntry] = useState(null)
 
   const reset = useCallback(() => {
     setStep(0)
@@ -540,6 +934,8 @@ export default function App() {
     setTxResult(null)
     setActiveTab('diagnosis')
     setError(null)
+    setCurrentLogId(null)
+    setView('consultation')
   }, [])
 
   const submitDiagnosis = async () => {
@@ -561,19 +957,54 @@ export default function App() {
     setError(null)
     try {
       const summary = buildPatientSummary(patient) + `\n\nDiagnosis: ${dxResult.primary_diagnosis}\nConfidence: ${dxResult.confidence}\nReasoning: ${dxResult.diagnosis_reasoning}`
-      // Search ward book for relevant protocols
       const matchedSections = searchWardBook(dxResult.primary_diagnosis + ' ' + (patient.complaints || ''))
       const wardBookContext = matchedSections.length > 0
-        ? matchedSections.map(s => `--- ${s.title} ---\n${s.content}`).join('\n\n')
+        ? matchedSections.map(sec => `--- ${sec.title} ---\n${sec.content}`).join('\n\n')
         : ''
       const result = await callClaude(SYSTEM_TREATMENT(type, wardBookContext), summary)
       setTxResult(result)
       setPhase('treated')
       setActiveTab('treatment')
+      // Auto-save to log
+      const logEntry = {
+        id: crypto.randomUUID?.() || String(Date.now()),
+        timestamp: new Date().toISOString(),
+        date: todayStr(),
+        patient: { ...patient },
+        dxResult: dxResult,
+        txResult: result,
+        treatmentType: type,
+        followUp: { scheduled: false, date: null, notes: '', completed: false },
+      }
+      const updated = addToLog(logEntry)
+      setPatientLog(updated)
+      setCurrentLogId(logEntry.id)
     } catch (e) {
       setError(e.message)
       setPhase('diagnosed')
     }
+  }
+
+  const handleUpdateLog = (id, updates) => {
+    const updated = updateLogEntry(id, updates)
+    setPatientLog(updated)
+    // Update selectedEntry if viewing it
+    if (selectedEntry?.id === id) {
+      setSelectedEntry(prev => ({ ...prev, ...updates }))
+    }
+  }
+
+  const handleLoadPatient = (entry) => {
+    setPatient({ ...entry.patient })
+    setView('consultation')
+    setPhase('intake')
+    setStep(0)
+    setDxResult(null)
+    setTxResult(null)
+    setActiveTab('diagnosis')
+    setError(null)
+    setCurrentLogId(null)
+    setSelectedEntry(null)
   }
 
   const StepComponent = STEPS[step]
@@ -588,18 +1019,28 @@ export default function App() {
     <div style={s.container}>
       {/* Header */}
       <header style={s.header}>
-        <div style={s.logo}>
-          <div style={s.logoIcon}>C</div>
-          <div>
-            <div style={s.logoText}>ClinIQ</div>
-            <div style={s.logoSub}>Clinical Decision Support</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <div style={s.logo}>
+            <div style={s.logoIcon}>C</div>
+            <div>
+              <div style={s.logoText}>ClinIQ</div>
+              <div style={s.logoSub}>Clinical Decision Support</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button style={s.toggle(view === 'consultation')} onClick={() => { setView('consultation'); setSelectedEntry(null) }}>
+              Consultation
+            </button>
+            <button style={s.toggle(view === 'dashboard')} onClick={() => { setView('dashboard'); setSelectedEntry(null) }}>
+              Dashboard
+            </button>
           </div>
         </div>
         <button style={s.btnOutline} onClick={reset}>New Patient</button>
       </header>
 
       {/* Disclaimer */}
-      {showDisclaimer && (
+      {showDisclaimer && view === 'consultation' && (
         <div style={s.disclaimer}>
           <span style={{ fontSize: 20, lineHeight: 1 }}>&#9888;</span>
           <div style={{ flex: 1 }}>
@@ -620,90 +1061,121 @@ export default function App() {
         </div>
       )}
 
-      {/* Intake Wizard */}
-      {(phase === 'intake') && (
+      {/* ─── DASHBOARD VIEW ─── */}
+      {view === 'dashboard' && !selectedEntry && (
+        <Dashboard
+          patientLog={patientLog}
+          setPatientLog={setPatientLog}
+          onLoadPatient={handleLoadPatient}
+          onViewDetail={setSelectedEntry}
+        />
+      )}
+
+      {view === 'dashboard' && selectedEntry && (
+        <PatientDetailView
+          entry={selectedEntry}
+          onClose={() => setSelectedEntry(null)}
+          onUpdateLog={handleUpdateLog}
+          onLoadPatient={handleLoadPatient}
+        />
+      )}
+
+      {/* ─── CONSULTATION VIEW ─── */}
+      {view === 'consultation' && (
         <>
-          <div style={s.progressBar}>
-            {STEPS.map((_, i) => (
-              <div key={i} style={s.progressStep(i === step, i < step)} />
-            ))}
-          </div>
-          <div style={s.card}>
-            <StepComponent p={patient} setP={setPatient} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-            <button
-              style={{ ...s.btnOutline, visibility: step === 0 ? 'hidden' : 'visible' }}
-              onClick={() => setStep(s => s - 1)}
-            >
-              Back
-            </button>
-            {step < 4 ? (
-              <button style={s.btn(T.accent)} onClick={() => setStep(s => s + 1)}>
-                Continue
-              </button>
-            ) : (
-              <button style={s.btn(T.green)} onClick={submitDiagnosis}>
-                Analyze &amp; Diagnose
-              </button>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* Loading — Diagnosing */}
-      {phase === 'diagnosing' && (
-        <div style={{ ...s.card, textAlign: 'center', padding: 60 }}>
-          <div style={{ ...s.spinner, margin: '0 auto 16px' }} />
-          <div style={{ fontFamily: T.mono, fontSize: 13, color: T.accent }}>Analyzing patient data...</div>
-          <div style={{ fontSize: 13, color: T.textMuted, marginTop: 8 }}>Running differential diagnosis</div>
-        </div>
-      )}
-
-      {/* Loading — Treating */}
-      {phase === 'treating' && (
-        <div style={{ ...s.card, textAlign: 'center', padding: 60 }}>
-          <div style={{ ...s.spinner, margin: '0 auto 16px' }} />
-          <div style={{ fontFamily: T.mono, fontSize: 13, color: T.green }}>Generating treatment plan...</div>
-        </div>
-      )}
-
-      {/* Results */}
-      {(phase === 'diagnosed' || phase === 'treated') && (
-        <>
-          {/* Treatment choice buttons */}
-          {phase === 'diagnosed' && (
-            <div style={{ ...s.card, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
-              <div style={{ fontFamily: T.mono, fontSize: 12, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>
-                Choose Treatment Approach
-              </div>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-                <button style={s.btn(T.amber, '#111')} onClick={() => submitTreatment('symptomatic')}>
-                  Symptomatic Treatment
-                </button>
-                <button style={s.btn(T.green)} onClick={() => submitTreatment('definitive')}>
-                  Definitive Treatment
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Tabs */}
-          {tabs.length > 0 && (
+          {/* Intake Wizard */}
+          {(phase === 'intake') && (
             <>
-              <div className="cliniq-tabs" style={{ display: 'flex', gap: 4, borderBottom: `1px solid ${T.cardBorder}`, marginBottom: 20 }}>
-                {tabs.map(t => (
-                  <button key={t.id} style={s.tab(activeTab === t.id)} onClick={() => setActiveTab(t.id)}>
-                    {t.label}
-                  </button>
+              <div style={s.progressBar}>
+                {STEPS.map((_, i) => (
+                  <div key={i} style={s.progressStep(i === step, i < step)} />
                 ))}
               </div>
               <div style={s.card}>
-                {activeTab === 'diagnosis' && dxResult && <DiagnosisTab dx={dxResult} />}
-                {activeTab === 'investigations' && dxResult && <InvestigationsTab inv={dxResult.investigations} />}
-                {activeTab === 'treatment' && txResult && <TreatmentTab tx={txResult} />}
-                {activeTab === 'prescription' && txResult && <PrescriptionTab patient={patient} dx={dxResult} tx={txResult} />}
+                <StepComponent p={patient} setP={setPatient} />
               </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                <button
+                  style={{ ...s.btnOutline, visibility: step === 0 ? 'hidden' : 'visible' }}
+                  onClick={() => setStep(prev => prev - 1)}
+                >
+                  Back
+                </button>
+                {step < 4 ? (
+                  <button style={s.btn(T.accent)} onClick={() => setStep(prev => prev + 1)}>
+                    Continue
+                  </button>
+                ) : (
+                  <button style={s.btn(T.green)} onClick={submitDiagnosis}>
+                    Analyze &amp; Diagnose
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Loading — Diagnosing */}
+          {phase === 'diagnosing' && (
+            <div style={{ ...s.card, textAlign: 'center', padding: 60 }}>
+              <div style={{ ...s.spinner, margin: '0 auto 16px' }} />
+              <div style={{ fontFamily: T.mono, fontSize: 13, color: T.accent }}>Analyzing patient data...</div>
+              <div style={{ fontSize: 13, color: T.textMuted, marginTop: 8 }}>Running differential diagnosis</div>
+            </div>
+          )}
+
+          {/* Loading — Treating */}
+          {phase === 'treating' && (
+            <div style={{ ...s.card, textAlign: 'center', padding: 60 }}>
+              <div style={{ ...s.spinner, margin: '0 auto 16px' }} />
+              <div style={{ fontFamily: T.mono, fontSize: 13, color: T.green }}>Generating treatment plan...</div>
+            </div>
+          )}
+
+          {/* Results */}
+          {(phase === 'diagnosed' || phase === 'treated') && (
+            <>
+              {phase === 'diagnosed' && (
+                <div style={{ ...s.card, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+                  <div style={{ fontFamily: T.mono, fontSize: 12, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>
+                    Choose Treatment Approach
+                  </div>
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <button style={s.btn(T.amber, '#111')} onClick={() => submitTreatment('symptomatic')}>
+                      Symptomatic Treatment
+                    </button>
+                    <button style={s.btn(T.green)} onClick={() => submitTreatment('definitive')}>
+                      Definitive Treatment
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {tabs.length > 0 && (
+                <>
+                  <div className="cliniq-tabs" style={{ display: 'flex', gap: 4, borderBottom: `1px solid ${T.cardBorder}`, marginBottom: 20 }}>
+                    {tabs.map(t => (
+                      <button key={t.id} style={s.tab(activeTab === t.id)} onClick={() => setActiveTab(t.id)}>
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={s.card}>
+                    {activeTab === 'diagnosis' && dxResult && <DiagnosisTab dx={dxResult} />}
+                    {activeTab === 'investigations' && dxResult && <InvestigationsTab inv={dxResult.investigations} />}
+                    {activeTab === 'treatment' && txResult && <TreatmentTab tx={txResult} />}
+                    {activeTab === 'prescription' && txResult && <PrescriptionTab patient={patient} dx={dxResult} tx={txResult} />}
+                  </div>
+                </>
+              )}
+
+              {/* Follow-up scheduler after treatment */}
+              {phase === 'treated' && currentLogId && (
+                <FollowUpScheduler
+                  logId={currentLogId}
+                  currentFollowUp={patientLog.find(e => e.id === currentLogId)?.followUp}
+                  onSave={handleUpdateLog}
+                />
+              )}
             </>
           )}
         </>
