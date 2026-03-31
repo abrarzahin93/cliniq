@@ -251,7 +251,9 @@ async function callClaude(systemPrompt, userMessage) {
     throw new Error(err.error?.message || `API error ${res.status}`)
   }
   const data = await res.json()
-  const text = data.content[0].text
+  let text = data.content[0].text
+  // Strip markdown code fences if present (```json ... ```)
+  text = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim()
   return JSON.parse(text)
 }
 
