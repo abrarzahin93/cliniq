@@ -1,116 +1,149 @@
 import { useState, useCallback, useMemo } from 'react'
 import { WARD_BOOK_SECTIONS } from './wardbook.js'
 
-// ─── Theme ───────────────────────────────────────────────────────────
+// ─── Theme — Liquid Glass + Markopolo-inspired ──────────────────────
 const T = {
-  bg: '#05080f', card: '#0b1120', cardBorder: '#1e293b',
-  accent: '#0ea5e9', accentDim: '#0ea5e920', green: '#10b981', greenDim: '#10b98120',
-  amber: '#f59e0b', amberDim: '#f59e0b20', red: '#ef4444', redDim: '#ef444420',
-  text: '#e2e8f0', textDim: '#94a3b8', textMuted: '#64748b',
-  mono: "'IBM Plex Mono', monospace", sans: "'IBM Plex Sans', sans-serif",
+  bg: '#000000',
+  card: 'rgba(255,255,255,0.04)',
+  cardHover: 'rgba(255,255,255,0.07)',
+  cardBorder: 'rgba(255,255,255,0.08)',
+  glass: 'rgba(255,255,255,0.06)',
+  glassBorder: 'rgba(255,255,255,0.12)',
+  accent: '#D8FE91',        // markopolo lime
+  accentDim: 'rgba(216,254,145,0.12)',
+  accentDark: '#111a08',
+  green: '#6ee7b7', greenDim: 'rgba(110,231,183,0.12)',
+  amber: '#fbbf24', amberDim: 'rgba(251,191,36,0.12)',
+  red: '#f87171', redDim: 'rgba(248,113,113,0.12)',
+  text: '#f0f0f0',
+  textDim: 'rgba(255,255,255,0.6)',
+  textMuted: 'rgba(255,255,255,0.35)',
+  surface1: 'rgb(28,28,28)',   // markopolo dark card
+  surface2: 'rgb(41,41,41)',   // markopolo lighter card
+  heading: "'Canela', Georgia, serif",
+  body: "'Inter', -apple-system, sans-serif",
+  mono: "'IBM Plex Mono', monospace",
+}
+
+const blur = '20px'
+const glassCard = {
+  background: T.glass,
+  backdropFilter: `blur(${blur})`,
+  WebkitBackdropFilter: `blur(${blur})`,
+  border: `1px solid ${T.glassBorder}`,
+  borderRadius: 16,
 }
 
 // ─── Styles ──────────────────────────────────────────────────────────
 const s = {
-  container: { maxWidth: 900, margin: '0 auto', padding: '20px 16px', fontFamily: T.sans },
+  container: { maxWidth: 920, margin: '0 auto', padding: '20px 16px', fontFamily: T.body },
   header: {
+    ...glassCard,
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '16px 0', borderBottom: `1px solid ${T.cardBorder}`, marginBottom: 24,
+    padding: '14px 24px', marginBottom: 28,
     flexWrap: 'wrap', gap: 12,
+    position: 'sticky', top: 12, zIndex: 50,
   },
-  logo: { display: 'flex', alignItems: 'center', gap: 10 },
+  logo: { display: 'flex', alignItems: 'center', gap: 12 },
   logoIcon: {
-    width: 36, height: 36, borderRadius: 8, background: `linear-gradient(135deg, ${T.accent}, #6366f1)`,
+    width: 38, height: 38, borderRadius: 10,
+    background: `linear-gradient(135deg, ${T.accent}, #a3e635)`,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontFamily: T.mono, fontWeight: 700, fontSize: 16, color: '#fff',
+    fontFamily: T.heading, fontWeight: 500, fontSize: 18, color: '#000',
   },
-  logoText: { fontFamily: T.mono, fontWeight: 600, fontSize: 20, color: T.text, letterSpacing: -0.5 },
-  logoSub: { fontFamily: T.mono, fontSize: 11, color: T.textMuted, marginTop: 2 },
-  btn: (bg, color = '#fff') => ({
-    padding: '10px 20px', border: 'none', borderRadius: 8, cursor: 'pointer',
+  logoText: { fontFamily: T.heading, fontWeight: 500, fontSize: 22, color: T.text, letterSpacing: -0.3 },
+  logoSub: { fontFamily: T.mono, fontSize: 10, color: T.textMuted, marginTop: 1, letterSpacing: 0.5, textTransform: 'uppercase' },
+  btn: (bg, color = '#000') => ({
+    padding: '10px 22px', border: 'none', borderRadius: 10, cursor: 'pointer',
     fontWeight: 600, fontSize: 14, color, background: bg,
-    transition: 'all 0.2s', fontFamily: T.sans,
+    transition: 'all 0.25s ease', fontFamily: T.body,
   }),
-  btnSm: (bg, color = '#fff') => ({
-    padding: '6px 14px', border: 'none', borderRadius: 6, cursor: 'pointer',
+  btnSm: (bg, color = '#000') => ({
+    padding: '7px 16px', border: 'none', borderRadius: 8, cursor: 'pointer',
     fontWeight: 600, fontSize: 12, color, background: bg,
-    transition: 'all 0.2s', fontFamily: T.sans,
+    transition: 'all 0.25s ease', fontFamily: T.body,
   }),
   btnOutline: {
-    padding: '10px 20px', border: `1px solid ${T.cardBorder}`, borderRadius: 8,
+    padding: '10px 22px', border: `1px solid ${T.glassBorder}`, borderRadius: 10,
     cursor: 'pointer', fontWeight: 500, fontSize: 14, color: T.textDim,
-    background: 'transparent', transition: 'all 0.2s', fontFamily: T.sans,
+    background: 'rgba(255,255,255,0.05)', transition: 'all 0.25s ease', fontFamily: T.body,
+    backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
   },
   card: {
-    background: T.card, border: `1px solid ${T.cardBorder}`, borderRadius: 12,
-    padding: 24, marginBottom: 20,
+    ...glassCard, padding: 24, marginBottom: 20,
   },
   label: {
-    fontFamily: T.mono, fontSize: 11, fontWeight: 500, color: T.textMuted,
-    textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6, display: 'block',
+    fontFamily: T.mono, fontSize: 10, fontWeight: 500, color: T.textMuted,
+    textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 6, display: 'block',
   },
   input: {
-    width: '100%', padding: '10px 14px', background: '#0f172a', border: `1px solid ${T.cardBorder}`,
-    borderRadius: 8, color: T.text, fontSize: 14, outline: 'none', fontFamily: T.sans,
-    transition: 'border-color 0.2s',
+    width: '100%', padding: '11px 16px',
+    background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.cardBorder}`,
+    borderRadius: 10, color: T.text, fontSize: 14, outline: 'none', fontFamily: T.body,
+    transition: 'border-color 0.25s, background 0.25s',
   },
   textarea: {
-    width: '100%', padding: '12px 14px', background: '#0f172a', border: `1px solid ${T.cardBorder}`,
-    borderRadius: 8, color: T.text, fontSize: 14, outline: 'none', fontFamily: T.sans,
-    minHeight: 100, resize: 'vertical', transition: 'border-color 0.2s',
+    width: '100%', padding: '12px 16px',
+    background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.cardBorder}`,
+    borderRadius: 10, color: T.text, fontSize: 14, outline: 'none', fontFamily: T.body,
+    minHeight: 100, resize: 'vertical', transition: 'border-color 0.25s, background 0.25s',
   },
-  grid: (cols, gap = 12) => ({
+  grid: (cols, gap = 14) => ({
     display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap,
   }),
-  progressBar: { display: 'flex', gap: 4, marginBottom: 24 },
+  progressBar: { display: 'flex', gap: 6, marginBottom: 28 },
   progressStep: (active, done) => ({
-    flex: 1, height: 4, borderRadius: 2,
-    background: done ? T.accent : active ? T.accent + '80' : T.cardBorder,
-    transition: 'background 0.3s',
+    flex: 1, height: 3, borderRadius: 2,
+    background: done ? T.accent : active ? 'rgba(216,254,145,0.4)' : 'rgba(255,255,255,0.08)',
+    transition: 'background 0.4s ease',
   }),
   stepTitle: {
-    fontFamily: T.mono, fontSize: 13, color: T.accent, marginBottom: 16,
-    textTransform: 'uppercase', letterSpacing: 1,
+    fontFamily: T.heading, fontSize: 18, color: T.accent, marginBottom: 18,
+    letterSpacing: -0.2,
   },
   badge: (color, bgColor) => ({
-    display: 'inline-block', padding: '3px 10px', borderRadius: 999, fontSize: 11,
+    display: 'inline-block', padding: '4px 12px', borderRadius: 999, fontSize: 10,
     fontWeight: 600, fontFamily: T.mono, color, background: bgColor, textTransform: 'uppercase',
+    letterSpacing: 0.5,
   }),
   tab: (active) => ({
-    padding: '10px 18px', border: 'none', borderRadius: '8px 8px 0 0', cursor: 'pointer',
-    fontWeight: 600, fontSize: 13, fontFamily: T.mono,
-    color: active ? T.accent : T.textMuted,
-    background: active ? T.card : 'transparent',
-    borderBottom: active ? `2px solid ${T.accent}` : '2px solid transparent',
-    transition: 'all 0.2s',
+    padding: '10px 20px', border: 'none', borderRadius: 10, cursor: 'pointer',
+    fontWeight: 600, fontSize: 13, fontFamily: T.body,
+    color: active ? '#000' : T.textMuted,
+    background: active ? T.accent : 'transparent',
+    transition: 'all 0.25s ease',
   }),
   toggle: (active) => ({
     padding: '8px 18px', border: `1px solid ${active ? T.accent : T.cardBorder}`,
-    borderRadius: 8, cursor: 'pointer', fontWeight: 500, fontSize: 13,
-    color: active ? T.accent : T.textDim,
-    background: active ? T.accentDim : 'transparent',
-    transition: 'all 0.2s', fontFamily: T.sans,
+    borderRadius: 10, cursor: 'pointer', fontWeight: 500, fontSize: 13,
+    color: active ? '#000' : T.textDim,
+    background: active ? T.accent : 'rgba(255,255,255,0.04)',
+    transition: 'all 0.25s ease', fontFamily: T.body,
   }),
   disclaimer: {
-    background: T.amberDim, border: `1px solid ${T.amber}40`, borderRadius: 10,
+    ...glassCard,
+    background: 'rgba(251,191,36,0.06)',
+    border: '1px solid rgba(251,191,36,0.15)',
     padding: '14px 20px', marginBottom: 24, display: 'flex', alignItems: 'flex-start', gap: 12,
   },
   spinner: {
-    width: 20, height: 20, border: `2px solid ${T.cardBorder}`, borderTop: `2px solid ${T.accent}`,
+    width: 22, height: 22, border: '2px solid rgba(255,255,255,0.08)',
+    borderTop: `2px solid ${T.accent}`,
     borderRadius: '50%', animation: 'spin 0.8s linear infinite',
   },
   rxPad: {
-    background: '#fff', color: '#111', padding: 40, borderRadius: 4,
-    fontFamily: T.sans, maxWidth: 700, margin: '0 auto',
+    background: '#fff', color: '#111', padding: 40, borderRadius: 8,
+    fontFamily: T.body, maxWidth: 700, margin: '0 auto',
   },
   statBox: (color) => ({
-    background: T.card, border: `1px solid ${T.cardBorder}`, borderRadius: 12,
-    padding: '16px 20px', flex: 1, minWidth: 140, borderLeft: `3px solid ${color}`,
+    ...glassCard, padding: '18px 22px', flex: 1, minWidth: 140,
+    borderLeft: `3px solid ${color}`,
   }),
   medexLink: {
     color: T.accent, fontSize: 11, fontFamily: T.mono, textDecoration: 'none',
-    padding: '2px 8px', border: `1px solid ${T.accent}40`, borderRadius: 4,
-    display: 'inline-block', transition: 'all 0.2s',
+    padding: '3px 10px', border: `1px solid rgba(216,254,145,0.2)`, borderRadius: 6,
+    display: 'inline-block', transition: 'all 0.25s',
+    background: 'rgba(216,254,145,0.06)',
   },
 }
 
@@ -267,8 +300,8 @@ function InputField({ label, value, onChange, placeholder, type = 'text' }) {
       <input
         type={type} value={value} onChange={e => onChange(e.target.value)}
         placeholder={placeholder} style={s.input}
-        onFocus={e => e.target.style.borderColor = T.accent}
-        onBlur={e => e.target.style.borderColor = T.cardBorder}
+        onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.background = 'rgba(255,255,255,0.07)' }}
+        onBlur={e => { e.target.style.borderColor = T.cardBorder; e.target.style.background = 'rgba(255,255,255,0.04)' }}
       />
     </Field>
   )
@@ -280,8 +313,8 @@ function TextareaField({ label, value, onChange, placeholder, rows }) {
       <textarea
         value={value} onChange={e => onChange(e.target.value)}
         placeholder={placeholder} style={{ ...s.textarea, minHeight: rows ? rows * 24 : 100 }}
-        onFocus={e => e.target.style.borderColor = T.accent}
-        onBlur={e => e.target.style.borderColor = T.cardBorder}
+        onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.background = 'rgba(255,255,255,0.07)' }}
+        onBlur={e => { e.target.style.borderColor = T.cardBorder; e.target.style.background = 'rgba(255,255,255,0.04)' }}
       />
     </Field>
   )
@@ -394,7 +427,7 @@ function DiagnosisTab({ dx }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-        <h3 style={{ fontSize: 22, fontWeight: 600, color: T.text }}>{dx.primary_diagnosis}</h3>
+        <h3 style={{ fontSize: 24, fontWeight: 500, color: T.text, fontFamily: T.heading }}>{dx.primary_diagnosis}</h3>
         <ConfidenceBadge level={dx.confidence} />
       </div>
       <div style={{ ...s.card, background: '#0f172a' }}>
@@ -643,17 +676,17 @@ function Dashboard({ patientLog, setPatientLog, onLoadPatient, onViewDetail }) {
       <div className="cliniq-stats-row" style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
         <div style={s.statBox(T.accent)}>
           <div style={{ ...s.label, marginBottom: 4 }}>Today</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: T.text, fontFamily: T.mono }}>{todaysPatients.length}</div>
+          <div style={{ fontSize: 32, fontWeight: 500, color: T.text, fontFamily: T.heading }}>{todaysPatients.length}</div>
           <div style={{ fontSize: 12, color: T.textMuted }}>patients seen</div>
         </div>
         <div style={s.statBox(T.amber)}>
           <div style={{ ...s.label, marginBottom: 4 }}>Follow-ups</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: T.amber, fontFamily: T.mono }}>{followUpsDue.length}</div>
+          <div style={{ fontSize: 32, fontWeight: 500, color: T.amber, fontFamily: T.heading }}>{followUpsDue.length}</div>
           <div style={{ fontSize: 12, color: T.textMuted }}>due today</div>
         </div>
         <div style={s.statBox(T.green)}>
           <div style={{ ...s.label, marginBottom: 4 }}>Total</div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: T.text, fontFamily: T.mono }}>{totalPatients}</div>
+          <div style={{ fontSize: 32, fontWeight: 500, color: T.text, fontFamily: T.heading }}>{totalPatients}</div>
           <div style={{ fontSize: 12, color: T.textMuted }}>all records</div>
         </div>
       </div>
@@ -666,7 +699,7 @@ function Dashboard({ patientLog, setPatientLog, onLoadPatient, onViewDetail }) {
             <div key={entry.id} style={{ ...s.card, borderLeft: `3px solid ${T.amber}`, padding: '16px 20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 16, color: T.text }}>{entry.patient?.name || 'Unknown'}</div>
+                  <div style={{ fontWeight: 500, fontSize: 17, color: T.text, fontFamily: T.heading }}>{entry.patient?.name || 'Unknown'}</div>
                   <div style={{ fontSize: 13, color: T.textDim, marginTop: 2 }}>
                     {entry.patient?.age} / {entry.patient?.sex} &middot; Dx: {entry.dxResult?.primary_diagnosis}
                   </div>
@@ -798,7 +831,7 @@ function PatientDetailView({ entry, onClose, onUpdateLog, onLoadPatient }) {
       <div style={{ ...s.card, borderLeft: `3px solid ${T.accent}` }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: T.text }}>{patient?.name || 'Unknown'}</div>
+            <div style={{ fontSize: 22, fontWeight: 500, color: T.text, fontFamily: T.heading }}>{patient?.name || 'Unknown'}</div>
             <div style={{ fontSize: 13, color: T.textDim, marginTop: 4 }}>
               {patient?.age} yrs / {patient?.sex} &middot; {patient?.weight ? `${patient.weight} kg` : ''} &middot; Seen: {entry.date} at {formatTime(entry.timestamp)}
             </div>
@@ -854,7 +887,7 @@ function MedicationsWithPrices({ medications }) {
           <div key={i} style={{ ...s.card, padding: '16px 20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 16, color: T.text }}>{med.drug}</div>
+                <div style={{ fontWeight: 500, fontSize: 17, color: T.text, fontFamily: T.heading }}>{med.drug}</div>
                 <div style={{ fontSize: 13, color: T.textDim, marginTop: 4 }}>
                   {med.dose} &middot; {med.route} &middot; {med.frequency} &middot; {med.duration}
                 </div>
@@ -898,6 +931,10 @@ if (typeof document !== 'undefined' && !document.getElementById('cliniq-responsi
     }
     @media print {
       .no-print { display: none !important; }
+    }
+    .glass-hover:hover {
+      background: rgba(255,255,255,0.07) !important;
+      border-color: rgba(255,255,255,0.15) !important;
     }
   `
   document.head.appendChild(style)

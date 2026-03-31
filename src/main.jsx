@@ -6,17 +6,17 @@ const globalStyles = document.createElement('style')
 globalStyles.textContent = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
-    background: #05080f;
-    color: #e2e8f0;
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #000000;
+    color: #f0f0f0;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
   }
   input, textarea, select, button { font-family: inherit; }
-  ::selection { background: #0ea5e933; }
+  ::selection { background: rgba(216, 254, 145, 0.2); }
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
   @media print {
     body * { visibility: hidden !important; }
     #rx-print, #rx-print * { visibility: visible !important; }
