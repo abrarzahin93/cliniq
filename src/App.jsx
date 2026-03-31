@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { WARD_BOOK_SECTIONS } from './wardbook.js'
 
 // ─── Theme ───────────────────────────────────────────────────────────
 const T = {
@@ -110,7 +111,33 @@ const SYSTEM_DIAGNOSIS = `You are a clinical decision support system trained on 
 }
 Do not include any text outside the JSON object.`
 
-const SYSTEM_TREATMENT = (type) => `You are a clinical decision support system trained on Davidson's Principles and Practice of Medicine and Harrison's Principles of Internal Medicine. Provide a ${type} treatment plan. Respond ONLY with valid JSON matching this exact shape:
+function searchWardBook(diagnosis) {
+  const terms = diagnosis.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 2)
+  const scored = WARD_BOOK_SECTIONS.map(section => {
+    const hay = (section.title + ' ' + section.content).toLowerCase()
+    let score = 0
+    for (const term of terms) {
+      if (hay.includes(term)) score += (section.title.toLowerCase().includes(term) ? 3 : 1)
+    }
+    return { ...section, score }
+  }).filter(s => s.score > 0).sort((a, b) => b.score - a.score)
+  // Return top matches, capped at ~20K chars to stay within context
+  const results = []
+  let totalLen = 0
+  for (const s of scored) {
+    if (totalLen + s.content.length > 20000) break
+    results.push(s)
+    totalLen += s.content.length
+  }
+  return results
+}
+
+const SYSTEM_TREATMENT = (type, wardBookContext) => {
+  let base = `You are a clinical decision support system trained on Davidson's Principles and Practice of Medicine and Harrison's Principles of Internal Medicine. Provide a ${type} treatment plan.`
+  if (wardBookContext) {
+    base += `\n\nIMPORTANT: You have access to the following clinical ward book protocols from the Department of Medicine, MMCH. Use these protocols as your PRIMARY reference for drug names, doses, routes, and frequencies. Follow these protocols closely when they match the patient's condition:\n\n${wardBookContext}`
+  }
+  base += `\n\nRespond ONLY with valid JSON matching this exact shape:
 {
   "treatment_plan": [{"step": "string", "details": "string", "priority": "immediate" | "short-term" | "long-term"}],
   "medications": [{"drug": "string", "dose": "string", "route": "string", "frequency": "string", "duration": "string", "notes": "string"}],
@@ -120,6 +147,8 @@ const SYSTEM_TREATMENT = (type) => `You are a clinical decision support system t
   "red_flags": "string"
 }
 Do not include any text outside the JSON object.`
+  return base
+}
 
 async function callClaude(systemPrompt, userMessage) {
   const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
@@ -532,7 +561,12 @@ export default function App() {
     setError(null)
     try {
       const summary = buildPatientSummary(patient) + `\n\nDiagnosis: ${dxResult.primary_diagnosis}\nConfidence: ${dxResult.confidence}\nReasoning: ${dxResult.diagnosis_reasoning}`
-      const result = await callClaude(SYSTEM_TREATMENT(type), summary)
+      // Search ward book for relevant protocols
+      const matchedSections = searchWardBook(dxResult.primary_diagnosis + ' ' + (patient.complaints || ''))
+      const wardBookContext = matchedSections.length > 0
+        ? matchedSections.map(s => `--- ${s.title} ---\n${s.content}`).join('\n\n')
+        : ''
+      const result = await callClaude(SYSTEM_TREATMENT(type, wardBookContext), summary)
       setTxResult(result)
       setPhase('treated')
       setActiveTab('treatment')
