@@ -1,0 +1,12 @@
+{
+  "name": "ClinIQ — Clinical Decision Support",
+  "short_name": "ClinIQ",
+  "description": "AI-assisted clinical decision support for doctors",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#D8FE91",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

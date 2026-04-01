@@ -1,5 +1,7 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { WARD_BOOK_SECTIONS } from './wardbook.js'
+import { createT } from './i18n.js'
+import { offlineDiagnosis, offlineTreatment } from './symptomChecker.js'
 
 // ─── Theme — Liquid Glass + Markopolo-inspired ──────────────────────
 const T = {
@@ -22,6 +24,7 @@ const T = {
   surface2: 'rgb(41,41,41)',   // markopolo lighter card
   heading: "'Canela', Georgia, serif",
   body: "'Inter', -apple-system, sans-serif",
+  bangla: "'Noto Sans Bengali', 'Inter', sans-serif",
   mono: "'IBM Plex Mono', monospace",
 }
 
@@ -374,122 +377,122 @@ function ToggleGroup({ label, options, value, onChange }) {
 }
 
 // ─── Wizard Steps ────────────────────────────────────────────────────
-function Step1({ p, setP }) {
+function Step1({ p, setP, t }) {
   return (
     <>
-      <div style={s.stepTitle}>Step 1 — Patient Particulars</div>
+      <div style={s.stepTitle}>{t('step1Title')}</div>
       <div style={s.grid(2)}>
-        <InputField label="Patient Name" value={p.name} onChange={v => setP({ ...p, name: v })} placeholder="Full name" />
-        <InputField label="Age" value={p.age} onChange={v => setP({ ...p, age: v })} placeholder="Years" type="number" />
+        <InputField label={t('patientName')} value={p.name} onChange={v => setP({ ...p, name: v })} placeholder={t('phFullName')} />
+        <InputField label={t('age')} value={p.age} onChange={v => setP({ ...p, age: v })} placeholder={t('phYears')} type="number" />
       </div>
-      <Field label="Sex">
+      <Field label={t('sex')}>
         <div style={{ display: 'flex', gap: 8 }}>
-          {['Male', 'Female', 'Other'].map(opt => (
-            <button key={opt} style={s.toggle(p.sex === opt)} onClick={() => setP({ ...p, sex: opt })}>
-              {opt}
+          {[['male', 'Male'], ['female', 'Female'], ['other', 'Other']].map(([key, val]) => (
+            <button key={val} style={s.toggle(p.sex === val)} onClick={() => setP({ ...p, sex: val })}>
+              {t(key)}
             </button>
           ))}
         </div>
       </Field>
-      <InputField label="Weight (kg)" value={p.weight} onChange={v => setP({ ...p, weight: v })} placeholder="kg" type="number" />
-      <div style={{ ...s.stepTitle, marginTop: 16, fontSize: 12 }}>Vitals</div>
+      <InputField label={t('weightKg')} value={p.weight} onChange={v => setP({ ...p, weight: v })} placeholder={t('phKg')} type="number" />
+      <div style={{ ...s.stepTitle, marginTop: 16, fontSize: 12 }}>{t('vitals')}</div>
       <div style={s.grid(3)}>
-        <InputField label="Blood Pressure" value={p.bp} onChange={v => setP({ ...p, bp: v })} placeholder="120/80" />
-        <InputField label="Pulse (/min)" value={p.pulse} onChange={v => setP({ ...p, pulse: v })} placeholder="72" type="number" />
-        <InputField label="Temp (°F)" value={p.temp} onChange={v => setP({ ...p, temp: v })} placeholder="98.6" />
+        <InputField label={t('bloodPressure')} value={p.bp} onChange={v => setP({ ...p, bp: v })} placeholder={t('phBP')} />
+        <InputField label={t('pulseMin')} value={p.pulse} onChange={v => setP({ ...p, pulse: v })} placeholder="72" type="number" />
+        <InputField label={t('tempF')} value={p.temp} onChange={v => setP({ ...p, temp: v })} placeholder="98.6" />
       </div>
       <div style={s.grid(2)}>
-        <InputField label="SpO2 (%)" value={p.spo2} onChange={v => setP({ ...p, spo2: v })} placeholder="98" type="number" />
-        <InputField label="Resp. Rate (/min)" value={p.rr} onChange={v => setP({ ...p, rr: v })} placeholder="16" type="number" />
+        <InputField label={t('spo2Pct')} value={p.spo2} onChange={v => setP({ ...p, spo2: v })} placeholder="98" type="number" />
+        <InputField label={t('respRate')} value={p.rr} onChange={v => setP({ ...p, rr: v })} placeholder="16" type="number" />
       </div>
     </>
   )
 }
 
-function Step2({ p, setP }) {
+function Step2({ p, setP, t }) {
   return (
     <>
-      <div style={s.stepTitle}>Step 2 — Chief Complaints</div>
+      <div style={s.stepTitle}>{t('step2Title')}</div>
       <TextareaField
-        label="Chief Complaints"
+        label={t('chiefComplaints')}
         value={p.complaints} onChange={v => setP({ ...p, complaints: v })}
-        placeholder={"Describe the patient's main complaints.\nInclude duration for each (e.g., 'Fever — 3 days, Cough — 1 week')"}
+        placeholder={t('phComplaints')}
         rows={6}
       />
     </>
   )
 }
 
-function Step3({ p, setP }) {
+function Step3({ p, setP, t }) {
   return (
     <>
-      <div style={s.stepTitle}>Step 3 — History</div>
-      <TextareaField label="Past Medical History" value={p.pastHistory} onChange={v => setP({ ...p, pastHistory: v })} placeholder="DM, HTN, asthma, surgeries, hospitalizations..." rows={3} />
-      <TextareaField label="Drug History" value={p.drugHistory} onChange={v => setP({ ...p, drugHistory: v })} placeholder="Current medications, doses, allergies..." rows={3} />
-      <TextareaField label="Investigation History" value={p.investigations} onChange={v => setP({ ...p, investigations: v })} placeholder="Recent labs, imaging, ECG..." rows={3} />
-      <TextareaField label="Social / Family History" value={p.socialFamily} onChange={v => setP({ ...p, socialFamily: v })} placeholder="Smoking, alcohol, occupation, family diseases..." rows={3} />
+      <div style={s.stepTitle}>{t('step3Title')}</div>
+      <TextareaField label={t('pastMedicalHistory')} value={p.pastHistory} onChange={v => setP({ ...p, pastHistory: v })} placeholder={t('phPastHistory')} rows={3} />
+      <TextareaField label={t('drugHistory')} value={p.drugHistory} onChange={v => setP({ ...p, drugHistory: v })} placeholder={t('phDrugHistory')} rows={3} />
+      <TextareaField label={t('investigationHistory')} value={p.investigations} onChange={v => setP({ ...p, investigations: v })} placeholder={t('phInvestigations')} rows={3} />
+      <TextareaField label={t('socialFamilyHistory')} value={p.socialFamily} onChange={v => setP({ ...p, socialFamily: v })} placeholder={t('phSocialFamily')} rows={3} />
     </>
   )
 }
 
-function Step4({ p, setP }) {
+function Step4({ p, setP, t }) {
   const ge = (typeof p.generalExam === 'object' && p.generalExam) ? p.generalExam : {}
   const updateGE = (field, value) => setP({ ...p, generalExam: { ...ge, [field]: value } })
 
   return (
     <>
-      <div style={s.stepTitle}>Step 4 — General Examination</div>
+      <div style={s.stepTitle}>{t('step4Title')}</div>
 
-      <div style={{ fontFamily: T.heading, fontSize: 15, color: T.textDim, marginBottom: 12 }}>General Survey</div>
+      <div style={{ fontFamily: T.heading, fontSize: 15, color: T.textDim, marginBottom: 12 }}>{t('generalSurvey')}</div>
       <div className="cliniq-grid-3" style={s.grid(3)}>
-        <ToggleGroup label="Built" options={['Average', 'Thin', 'Obese']} value={ge.built || ''} onChange={v => updateGE('built', v)} />
-        <ToggleGroup label="Nourishment" options={['Well', 'Moderate', 'Poor']} value={ge.nourishment || ''} onChange={v => updateGE('nourishment', v)} />
-        <InputField label="Decubitus" value={ge.decubitus || ''} onChange={v => updateGE('decubitus', v)} placeholder="e.g. Propped up" />
+        <ToggleGroup label={t('built')} options={[t('average'), t('thin'), t('obese')]} value={ge.built || ''} onChange={v => updateGE('built', v)} />
+        <ToggleGroup label={t('nourishment')} options={[t('well'), t('moderate'), t('poor')]} value={ge.nourishment || ''} onChange={v => updateGE('nourishment', v)} />
+        <InputField label={t('decubitus')} value={ge.decubitus || ''} onChange={v => updateGE('decubitus', v)} placeholder={t('phDecubitus')} />
       </div>
 
-      <div style={{ fontFamily: T.heading, fontSize: 15, color: T.textDim, marginBottom: 12, marginTop: 8 }}>Inspection Findings</div>
+      <div style={{ fontFamily: T.heading, fontSize: 15, color: T.textDim, marginBottom: 12, marginTop: 8 }}>{t('inspectionFindings')}</div>
       <div className="cliniq-grid-3" style={s.grid(3)}>
-        <ToggleGroup label="Pallor (Anaemia)" options={['Absent', 'Mild', 'Moderate', 'Severe']} value={ge.pallor || ''} onChange={v => updateGE('pallor', v)} />
-        <ToggleGroup label="Jaundice (Icterus)" options={['Absent', 'Present']} value={ge.jaundice || ''} onChange={v => updateGE('jaundice', v)} />
-        <ToggleGroup label="Cyanosis" options={['Absent', 'Peripheral', 'Central']} value={ge.cyanosis || ''} onChange={v => updateGE('cyanosis', v)} />
-        <ToggleGroup label="Clubbing" options={['Absent', 'Present']} value={ge.clubbing || ''} onChange={v => updateGE('clubbing', v)} />
-        <ToggleGroup label="Koilonychia" options={['Absent', 'Present']} value={ge.koilonychia || ''} onChange={v => updateGE('koilonychia', v)} />
-        <ToggleGroup label="Leukonychia" options={['Absent', 'Present']} value={ge.leukonychia || ''} onChange={v => updateGE('leukonychia', v)} />
+        <ToggleGroup label={t('pallorAnaemia')} options={[t('absent'), t('mild'), t('moderate'), t('severe')]} value={ge.pallor || ''} onChange={v => updateGE('pallor', v)} />
+        <ToggleGroup label={t('jaundiceIcterus')} options={[t('absent'), t('present')]} value={ge.jaundice || ''} onChange={v => updateGE('jaundice', v)} />
+        <ToggleGroup label={t('cyanosis')} options={[t('absent'), t('peripheral'), t('central')]} value={ge.cyanosis || ''} onChange={v => updateGE('cyanosis', v)} />
+        <ToggleGroup label={t('clubbing')} options={[t('absent'), t('present')]} value={ge.clubbing || ''} onChange={v => updateGE('clubbing', v)} />
+        <ToggleGroup label={t('koilonychia')} options={[t('absent'), t('present')]} value={ge.koilonychia || ''} onChange={v => updateGE('koilonychia', v)} />
+        <ToggleGroup label={t('leukonychia')} options={[t('absent'), t('present')]} value={ge.leukonychia || ''} onChange={v => updateGE('leukonychia', v)} />
       </div>
 
-      <div style={{ fontFamily: T.heading, fontSize: 15, color: T.textDim, marginBottom: 12, marginTop: 8 }}>Other Findings</div>
+      <div style={{ fontFamily: T.heading, fontSize: 15, color: T.textDim, marginBottom: 12, marginTop: 8 }}>{t('otherFindings')}</div>
       <div className="cliniq-grid-2" style={s.grid(2)}>
         <div>
-          <ToggleGroup label="Lymphadenopathy" options={['Absent', 'Present']} value={ge.lymphadenopathy || ''} onChange={v => updateGE('lymphadenopathy', v)} />
-          {ge.lymphadenopathy === 'Present' && (
-            <InputField label="Lymph Node Details" value={ge.lymphDetails || ''} onChange={v => updateGE('lymphDetails', v)} placeholder="Location, size, consistency..." />
+          <ToggleGroup label={t('lymphadenopathy')} options={[t('absent'), t('present')]} value={ge.lymphadenopathy || ''} onChange={v => updateGE('lymphadenopathy', v)} />
+          {ge.lymphadenopathy === t('present') && (
+            <InputField label={t('lymphNodeDetails')} value={ge.lymphDetails || ''} onChange={v => updateGE('lymphDetails', v)} placeholder={t('phLymphDetails')} />
           )}
         </div>
         <div>
-          <ToggleGroup label="Edema" options={['Absent', 'Pitting', 'Non-pitting']} value={ge.edema || ''} onChange={v => updateGE('edema', v)} />
-          {ge.edema && ge.edema !== 'Absent' && (
-            <InputField label="Edema Location" value={ge.edemaDetails || ''} onChange={v => updateGE('edemaDetails', v)} placeholder="Pedal, sacral, facial..." />
+          <ToggleGroup label={t('edema')} options={[t('absent'), t('pitting'), t('nonPitting')]} value={ge.edema || ''} onChange={v => updateGE('edema', v)} />
+          {ge.edema && ge.edema !== t('absent') && (
+            <InputField label={t('edemaLocation')} value={ge.edemaDetails || ''} onChange={v => updateGE('edemaDetails', v)} placeholder={t('phEdemaLocation')} />
           )}
         </div>
       </div>
       <div className="cliniq-grid-3" style={s.grid(3)}>
-        <ToggleGroup label="Dehydration" options={['None', 'Mild', 'Moderate', 'Severe']} value={ge.dehydration || ''} onChange={v => updateGE('dehydration', v)} />
-        <ToggleGroup label="JVP" options={['Normal', 'Raised']} value={ge.jvp || ''} onChange={v => updateGE('jvp', v)} />
-        <ToggleGroup label="Thyroid" options={['Normal', 'Enlarged']} value={ge.thyroid || ''} onChange={v => updateGE('thyroid', v)} />
+        <ToggleGroup label={t('dehydration')} options={[t('none'), t('mild'), t('moderate'), t('severe')]} value={ge.dehydration || ''} onChange={v => updateGE('dehydration', v)} />
+        <ToggleGroup label={t('jvp')} options={[t('normal'), t('raised')]} value={ge.jvp || ''} onChange={v => updateGE('jvp', v)} />
+        <ToggleGroup label={t('thyroid')} options={[t('normal'), t('enlarged')]} value={ge.thyroid || ''} onChange={v => updateGE('thyroid', v)} />
       </div>
 
-      <TextareaField label="Additional Notes" value={ge.otherFindings || ''} onChange={v => updateGE('otherFindings', v)} placeholder="Any other findings..." rows={3} />
+      <TextareaField label={t('additionalNotes')} value={ge.otherFindings || ''} onChange={v => updateGE('otherFindings', v)} placeholder={t('phOtherFindings')} rows={3} />
     </>
   )
 }
 
-function Step5({ p, setP }) {
+function Step5({ p, setP, t }) {
   return (
     <>
-      <div style={s.stepTitle}>Step 5 — Systemic Examination (Optional)</div>
-      <TextareaField label="Respiratory System" value={p.respiratory} onChange={v => setP({ ...p, respiratory: v })} placeholder="Chest shape, air entry, breath sounds, added sounds..." rows={3} />
-      <TextareaField label="Abdominal Examination" value={p.abdominal} onChange={v => setP({ ...p, abdominal: v })} placeholder="Inspection, palpation, percussion, auscultation..." rows={3} />
-      <TextareaField label="CNS / CVS" value={p.cnsCvs} onChange={v => setP({ ...p, cnsCvs: v })} placeholder="Heart sounds, murmurs, neurological findings..." rows={3} />
+      <div style={s.stepTitle}>{t('step5Title')}</div>
+      <TextareaField label={t('respiratorySystem')} value={p.respiratory} onChange={v => setP({ ...p, respiratory: v })} placeholder={t('phRespiratory')} rows={3} />
+      <TextareaField label={t('abdominalExam')} value={p.abdominal} onChange={v => setP({ ...p, abdominal: v })} placeholder={t('phAbdominal')} rows={3} />
+      <TextareaField label={t('cnsCvs')} value={p.cnsCvs} onChange={v => setP({ ...p, cnsCvs: v })} placeholder={t('phCnsCvs')} rows={3} />
     </>
   )
 }
@@ -685,7 +688,8 @@ const PROBING_CATEGORY_COLORS = {
   risk_factor: [T.green, T.greenDim],
 }
 
-function ProbingPhase({ dxResult, probingQuestions, probingAnswers, setProbingAnswers, onRefine, onSkip }) {
+function ProbingPhase({ dxResult, probingQuestions, probingAnswers, setProbingAnswers, onRefine, onSkip, t: pt }) {
+  const t = pt || (k => k)
   const updateAnswer = (id, value) => setProbingAnswers(prev => ({ ...prev, [id]: value }))
   const setQuickAnswer = (id, quick) => {
     const current = probingAnswers[id] || ''
@@ -697,13 +701,13 @@ function ProbingPhase({ dxResult, probingQuestions, probingAnswers, setProbingAn
     <div>
       {/* Preliminary diagnosis */}
       <div style={{ ...s.card, borderLeft: `3px solid ${T.accent}` }}>
-        <div style={s.label}>Preliminary Diagnosis</div>
+        <div style={s.label}>{t('preliminaryDiagnosis')}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
           <span style={{ fontFamily: T.heading, fontSize: 20, color: T.text }}>{dxResult?.primary_diagnosis}</span>
           {dxResult?.confidence && <ConfidenceBadge level={dxResult.confidence} />}
         </div>
         <div style={{ fontSize: 13, color: T.textMuted, marginTop: 6 }}>
-          Answer the questions below to refine this diagnosis, or skip to confirm it.
+          {t('probingInstructions')}
         </div>
       </div>
 
@@ -711,12 +715,12 @@ function ProbingPhase({ dxResult, probingQuestions, probingAnswers, setProbingAn
       {!probingQuestions ? (
         <div style={{ ...s.card, textAlign: 'center', padding: 50 }}>
           <div style={{ ...s.spinner, margin: '0 auto 16px' }} />
-          <div style={{ fontFamily: T.mono, fontSize: 13, color: T.accent }}>Generating clinical interview questions...</div>
+          <div style={{ fontFamily: T.mono, fontSize: 13, color: T.accent }}>{t('generatingQuestions')}</div>
         </div>
       ) : (
         <>
           <div style={{ fontFamily: T.heading, fontSize: 16, color: T.textDim, marginBottom: 16 }}>
-            Clinical Interview — {probingQuestions.length} Questions
+            {t('clinicalInterview')} — {probingQuestions.length} {t('questions')}
           </div>
           {probingQuestions.map((q, i) => {
             const [catColor, catBg] = PROBING_CATEGORY_COLORS[q.category] || [T.textDim, T.cardBorder]
@@ -729,13 +733,13 @@ function ProbingPhase({ dxResult, probingQuestions, probingAnswers, setProbingAn
                 <div style={{ fontSize: 15, color: T.text, lineHeight: 1.5, marginBottom: 6 }}>{q.question}</div>
                 <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 12, fontFamily: T.mono }}>{q.reason}</div>
                 <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
-                  {['Yes', 'No', 'N/A'].map(opt => (
+                  {[[t('yes'), 'Yes'], [t('no'), 'No'], [t('na'), 'N/A']].map(([label, val]) => (
                     <button
-                      key={opt}
-                      style={{ ...s.toggle((probingAnswers[q.id] || '').startsWith(opt)), padding: '5px 14px', fontSize: 12 }}
-                      onClick={() => setQuickAnswer(q.id, opt)}
+                      key={val}
+                      style={{ ...s.toggle((probingAnswers[q.id] || '').startsWith(val)), padding: '5px 14px', fontSize: 12 }}
+                      onClick={() => setQuickAnswer(q.id, val)}
                     >
-                      {opt}
+                      {label}
                     </button>
                   ))}
                 </div>
@@ -754,10 +758,10 @@ function ProbingPhase({ dxResult, probingQuestions, probingAnswers, setProbingAn
 
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
             <button style={s.btnOutline} onClick={onSkip}>
-              Skip — Confirm Diagnosis
+              {t('skipConfirmDx')}
             </button>
             <button style={s.btn(T.accent)} onClick={onRefine}>
-              Refine Diagnosis
+              {t('refineDiagnosis')}
             </button>
           </div>
         </>
@@ -1137,7 +1141,26 @@ const INITIAL_PATIENT = {
 }
 
 export default function App() {
-  const [view, setView] = useState('consultation') // consultation | dashboard
+  const [lang, setLang] = useState(() => localStorage.getItem('cliniq_lang') || 'en')
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
+  const t = useMemo(() => createT(lang), [lang])
+  const bodyFont = lang === 'bn' ? T.bangla : T.body
+
+  useEffect(() => {
+    const on = () => setIsOnline(true)
+    const off = () => setIsOnline(false)
+    window.addEventListener('online', on)
+    window.addEventListener('offline', off)
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
+  }, [])
+
+  const toggleLang = () => {
+    const next = lang === 'en' ? 'bn' : 'en'
+    setLang(next)
+    localStorage.setItem('cliniq_lang', next)
+  }
+
+  const [view, setView] = useState('consultation')
   const [showDisclaimer, setShowDisclaimer] = useState(true)
   const [step, setStep] = useState(0)
   const [patient, setPatient] = useState(INITIAL_PATIENT)
@@ -1170,7 +1193,16 @@ export default function App() {
     setPhase('diagnosing')
     setError(null)
     try {
-      const result = await callClaude(SYSTEM_DIAGNOSIS, buildPatientSummary(patient))
+      let result
+      if (!navigator.onLine) {
+        // Offline fallback — local symptom checker
+        result = offlineDiagnosis(buildPatientSummary(patient))
+        setDxResult(result)
+        setPhase('diagnosed') // skip probing offline
+        return
+      }
+      const langInstruction = lang === 'bn' ? '\nIMPORTANT: Generate all text fields in Bangla (Bengali) language.' : ''
+      result = await callClaude(SYSTEM_DIAGNOSIS + langInstruction, buildPatientSummary(patient))
       setDxResult(result)
       // Enter probing phase — generate follow-up questions
       setPhase('probing')
@@ -1180,10 +1212,10 @@ export default function App() {
         const summary = buildPatientSummary(patient)
           + `\n\nPreliminary Diagnosis: ${result.primary_diagnosis}`
           + `\nDifferentials: ${result.differentials?.map(d => d.diagnosis).join(', ')}`
-        const probeResult = await callClaude(SYSTEM_PROBING, summary)
+        const probeLangInstruction = lang === 'bn' ? '\nIMPORTANT: Generate all questions and reasons in Bangla (Bengali) language so the doctor can read them directly to the patient.' : ''
+        const probeResult = await callClaude(SYSTEM_PROBING + probeLangInstruction, summary)
         setProbingQuestions(probeResult.questions)
       } catch {
-        // If probing fails, skip to diagnosed (non-critical)
         setPhase('diagnosed')
       }
     } catch (e) {
@@ -1220,8 +1252,27 @@ export default function App() {
     setPhase('treating')
     setError(null)
     try {
+      let result
+      if (!navigator.onLine) {
+        // Offline fallback
+        result = offlineTreatment(dxResult.primary_diagnosis, buildPatientSummary(patient))
+        setTxResult(result)
+        setPhase('treated')
+        setActiveTab('treatment')
+        const logEntry = {
+          id: crypto.randomUUID?.() || String(Date.now()),
+          timestamp: new Date().toISOString(),
+          date: todayStr(),
+          patient: { ...patient },
+          dxResult, txResult: result, treatmentType: type,
+          followUp: { scheduled: false, date: null, notes: '', completed: false },
+        }
+        const updated = addToLog(logEntry)
+        setPatientLog(updated)
+        setCurrentLogId(logEntry.id)
+        return
+      }
       let summary = buildPatientSummary(patient) + `\n\nDiagnosis: ${dxResult.primary_diagnosis}\nConfidence: ${dxResult.confidence}\nReasoning: ${dxResult.diagnosis_reasoning}`
-      // Append probing answers if available
       if (probingQuestions && Object.keys(probingAnswers).length > 0) {
         summary += '\n\nClinical Interview Follow-up:\n'
         probingQuestions.forEach(q => {
@@ -1233,7 +1284,8 @@ export default function App() {
       const wardBookContext = matchedSections.length > 0
         ? matchedSections.map(sec => `--- ${sec.title} ---\n${sec.content}`).join('\n\n')
         : ''
-      const result = await callClaude(SYSTEM_TREATMENT(type, wardBookContext), summary)
+      const langInstruction = lang === 'bn' ? '\nIMPORTANT: Generate all text fields in Bangla (Bengali) language.' : ''
+      result = await callClaude(SYSTEM_TREATMENT(type, wardBookContext) + langInstruction, summary)
       setTxResult(result)
       setPhase('treated')
       setActiveTab('treatment')
@@ -1285,44 +1337,72 @@ export default function App() {
 
   const StepComponent = STEPS[step]
   const tabs = [
-    { id: 'diagnosis', label: 'Diagnosis', show: !!dxResult },
-    { id: 'investigations', label: 'Investigations', show: !!dxResult?.investigations },
-    { id: 'treatment', label: 'Treatment', show: !!txResult },
-    { id: 'prescription', label: 'Prescription', show: !!txResult?.medications },
-  ].filter(t => t.show)
+    { id: 'diagnosis', label: t('diagnosisTab'), show: !!dxResult },
+    { id: 'investigations', label: t('investigationsTab'), show: !!dxResult?.investigations },
+    { id: 'treatment', label: t('treatmentTab'), show: !!txResult },
+    { id: 'prescription', label: t('prescriptionTab'), show: !!txResult?.medications },
+  ].filter(tb => tb.show)
 
   return (
-    <div style={s.container}>
+    <div style={{ ...s.container, fontFamily: bodyFont }}>
       {/* Header */}
       <header style={s.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
           <div style={s.logo}>
             <div style={s.logoIcon}>C</div>
             <div>
-              <div style={s.logoText}>ClinIQ</div>
-              <div style={s.logoSub}>Clinical Decision Support</div>
+              <div style={s.logoText}>{t('cliniq')}</div>
+              <div style={s.logoSub}>{t('clinicalDecisionSupport')}</div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 4 }}>
             <button style={s.toggle(view === 'consultation')} onClick={() => { setView('consultation'); setSelectedEntry(null) }}>
-              Consultation
+              {t('consultation')}
             </button>
             <button style={s.toggle(view === 'dashboard')} onClick={() => { setView('dashboard'); setSelectedEntry(null) }}>
-              Dashboard
+              {t('dashboard')}
             </button>
           </div>
         </div>
-        <button style={s.btnOutline} onClick={reset}>New Patient</button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={toggleLang}
+            style={{ ...s.btnSm(lang === 'bn' ? T.accent : 'rgba(255,255,255,0.1)', lang === 'bn' ? '#000' : T.textDim), fontSize: 13, fontFamily: T.bangla }}
+          >
+            {lang === 'en' ? 'বাংলা' : 'EN'}
+          </button>
+          {!isOnline && (
+            <span style={{ ...s.badge(T.amber, T.amberDim), fontSize: 9 }}>OFFLINE</span>
+          )}
+          <button style={s.btnOutline} onClick={reset}>{t('newPatient')}</button>
+        </div>
       </header>
+
+      {/* Offline Banner */}
+      {!isOnline && (
+        <div style={{ ...s.card, background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 16 }}>&#9889;</span>
+          <span style={{ fontSize: 13, color: T.amber }}>{t('offlineBanner')}</span>
+        </div>
+      )}
+
+      {/* Re-analyze with AI button when back online after offline diagnosis */}
+      {isOnline && dxResult?._offline && phase === 'diagnosed' && (
+        <div style={{ ...s.card, textAlign: 'center', padding: 16, background: 'rgba(216,254,145,0.06)', border: '1px solid rgba(216,254,145,0.2)' }}>
+          <button style={s.btn(T.accent)} onClick={() => { setDxResult(null); submitDiagnosis() }}>
+            {t('reanalyzeWithAI')}
+          </button>
+        </div>
+      )}
 
       {/* Disclaimer */}
       {showDisclaimer && view === 'consultation' && (
         <div style={s.disclaimer}>
           <span style={{ fontSize: 20, lineHeight: 1 }}>&#9888;</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600, fontSize: 14, color: T.amber, marginBottom: 4 }}>Clinical Support Tool Only</div>
+            <div style={{ fontWeight: 600, fontSize: 14, color: T.amber, marginBottom: 4 }}>{t('disclaimerTitle')}</div>
             <div style={{ fontSize: 13, color: T.textDim, lineHeight: 1.5 }}>
-              ClinIQ is an AI-assisted decision support tool and does NOT replace clinical judgment. All diagnoses and treatment plans must be verified by a qualified medical professional before any clinical action is taken.
+              {t('disclaimerText')}
             </div>
           </div>
           <button onClick={() => setShowDisclaimer(false)} style={{ background: 'none', border: 'none', color: T.textMuted, cursor: 'pointer', fontSize: 18, padding: 4 }}>&times;</button>
@@ -1368,22 +1448,22 @@ export default function App() {
                 ))}
               </div>
               <div style={s.card}>
-                <StepComponent p={patient} setP={setPatient} />
+                <StepComponent p={patient} setP={setPatient} t={t} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                 <button
                   style={{ ...s.btnOutline, visibility: step === 0 ? 'hidden' : 'visible' }}
                   onClick={() => setStep(prev => prev - 1)}
                 >
-                  Back
+                  {t('back')}
                 </button>
                 {step < 4 ? (
                   <button style={s.btn(T.accent)} onClick={() => setStep(prev => prev + 1)}>
-                    Continue
+                    {t('continue')}
                   </button>
                 ) : (
                   <button style={s.btn(T.green)} onClick={submitDiagnosis}>
-                    Analyze &amp; Diagnose
+                    {t('analyzeDiagnose')}
                   </button>
                 )}
               </div>
@@ -1394,8 +1474,8 @@ export default function App() {
           {phase === 'diagnosing' && (
             <div style={{ ...s.card, textAlign: 'center', padding: 60 }}>
               <div style={{ ...s.spinner, margin: '0 auto 16px' }} />
-              <div style={{ fontFamily: T.mono, fontSize: 13, color: T.accent }}>Analyzing patient data...</div>
-              <div style={{ fontSize: 13, color: T.textMuted, marginTop: 8 }}>Running differential diagnosis</div>
+              <div style={{ fontFamily: T.mono, fontSize: 13, color: T.accent }}>{t('analyzingPatientData')}</div>
+              <div style={{ fontSize: 13, color: T.textMuted, marginTop: 8 }}>{t('runningDifferentialDx')}</div>
             </div>
           )}
 
@@ -1408,6 +1488,7 @@ export default function App() {
               setProbingAnswers={setProbingAnswers}
               onRefine={submitRefinedDiagnosis}
               onSkip={skipProbing}
+              t={t}
             />
           )}
 
@@ -1415,7 +1496,7 @@ export default function App() {
           {phase === 'treating' && (
             <div style={{ ...s.card, textAlign: 'center', padding: 60 }}>
               <div style={{ ...s.spinner, margin: '0 auto 16px' }} />
-              <div style={{ fontFamily: T.mono, fontSize: 13, color: T.green }}>Generating treatment plan...</div>
+              <div style={{ fontFamily: T.mono, fontSize: 13, color: T.green }}>{t('generatingTreatment')}</div>
             </div>
           )}
 
@@ -1425,14 +1506,14 @@ export default function App() {
               {phase === 'diagnosed' && (
                 <div style={{ ...s.card, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
                   <div style={{ fontFamily: T.mono, fontSize: 12, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>
-                    Choose Treatment Approach
+                    {t('chooseTreatment')}
                   </div>
                   <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
                     <button style={s.btn(T.amber, '#111')} onClick={() => submitTreatment('symptomatic')}>
-                      Symptomatic Treatment
+                      {t('symptomaticTreatment')}
                     </button>
                     <button style={s.btn(T.green)} onClick={() => submitTreatment('definitive')}>
-                      Definitive Treatment
+                      {t('definitiveTreatment')}
                     </button>
                   </div>
                 </div>
@@ -1441,9 +1522,9 @@ export default function App() {
               {tabs.length > 0 && (
                 <>
                   <div className="cliniq-tabs" style={{ display: 'flex', gap: 4, borderBottom: `1px solid ${T.cardBorder}`, marginBottom: 20 }}>
-                    {tabs.map(t => (
-                      <button key={t.id} style={s.tab(activeTab === t.id)} onClick={() => setActiveTab(t.id)}>
-                        {t.label}
+                    {tabs.map(tb => (
+                      <button key={tb.id} style={s.tab(activeTab === tb.id)} onClick={() => setActiveTab(tb.id)}>
+                        {tb.label}
                       </button>
                     ))}
                   </div>
