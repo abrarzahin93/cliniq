@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { createT } from './i18n.js'
+import { findBDbrands } from './bdDrugs.js'
 
 // Lazy-load ward book and symptom checker — they're large and not needed on initial render
 let _wardBookSections = null
@@ -168,15 +169,13 @@ const s = {
 }
 
 // ─── localStorage ────────────────────────────────────────────────────
-const LS_KEY = 'cliniq_patient_log'
-
 function loadPatientLog() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') }
+  try { return JSON.parse(localStorage.getItem(LOG_KEY_V2) || '[]') }
   catch { return [] }
 }
 
 function savePatientLog(log) {
-  localStorage.setItem(LS_KEY, JSON.stringify(log))
+  localStorage.setItem(LOG_KEY_V2, JSON.stringify(log))
 }
 
 function addToLog(entry) {
@@ -192,6 +191,43 @@ function updateLogEntry(id, updates) {
   if (idx !== -1) log[idx] = { ...log[idx], ...updates }
   savePatientLog(log)
   return log
+}
+
+function loadPatientLogForDoctor(doctorId) {
+  return loadPatientLog().filter(e => e.doctorId === doctorId)
+}
+
+// ─── API sync ────────────────────────────────────────────────────────
+const API_BASE = '/api'
+const ADMIN_KEY = 'cliniq-admin-abrar-2024'
+
+function apiPost(path, body) {
+  fetch(API_BASE + path, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).catch(() => {}) // fire-and-forget
+}
+
+async function apiAdminStats() {
+  const res = await fetch(API_BASE + '/admin/stats', { headers: { 'x-admin-key': ADMIN_KEY } })
+  if (!res.ok) throw new Error('Unauthorized')
+  return res.json()
+}
+
+// ─── Doctor Identity ─────────────────────────────────────────────────
+const DOC_KEY = 'cliniq_doctor'
+const LOG_KEY_V2 = 'cliniq_patient_log_v2'
+
+function loadDoctor() {
+  try { return JSON.parse(localStorage.getItem(DOC_KEY)) } catch { return null }
+}
+
+function saveDoctor(doc) {
+  localStorage.setItem(DOC_KEY, JSON.stringify(doc))
+}
+
+function clearDoctor() {
+  localStorage.removeItem(DOC_KEY)
 }
 
 // ─── MedEx helpers ───────────────────────────────────────────────────
@@ -668,15 +704,7 @@ function PrescriptionTab({ patient, dx, tx }) {
                 <td style={{ padding: '8px 6px' }}>{i + 1}</td>
                 <td style={{ padding: '8px 6px' }}>
                   <span style={{ fontWeight: 600 }}>{med.drug}</span>
-                  <br />
-                  <a
-                    href={medexSearchUrl(med.drug)}
-                    target="_blank" rel="noopener noreferrer"
-                    className="no-print"
-                    style={{ color: '#0ea5e9', fontSize: 10, textDecoration: 'none' }}
-                  >
-                    Find BD Trade Names &rarr;
-                  </a>
+                  <BDbrands drugName={med.drug} />
                 </td>
                 <td style={{ padding: '8px 6px' }}>{med.dose}</td>
                 <td style={{ padding: '8px 6px' }}>{med.route}</td>
@@ -1079,33 +1107,36 @@ function PatientDetailView({ entry, onClose, onUpdateLog, onLoadPatient }) {
 function MedicationsWithPrices({ medications }) {
   return (
     <div>
-      <div style={s.label}>Medications — Bangladesh Trade Names &amp; Prices</div>
+      <div style={s.label}>Medications — Bangladesh Trade Names</div>
       <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 16 }}>
-        Click "MedEx" to find Bangladeshi trade names, manufacturers, and current prices on medex.com.bd
+        Showing top BD brands from priority manufacturers (BEXIMCO, ACI, OPSONIN, DRUG INTL, SQUARE)
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {medications?.map((med, i) => (
-          <div key={i} style={{ ...s.card, padding: '16px 20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 500, fontSize: 17, color: T.text, fontFamily: T.heading }}>{med.drug}</div>
-                <div style={{ fontSize: 13, color: T.textDim, marginTop: 4 }}>
-                  {med.dose} &middot; {med.route} &middot; {med.frequency} &middot; {med.duration}
+        {medications?.map((med, i) => {
+          const brands = findBDbrands(med.drug)
+          return (
+            <div key={i} style={{ ...s.card, padding: '16px 20px' }}>
+              <div style={{ fontWeight: 500, fontSize: 17, color: T.text, fontFamily: T.heading }}>{med.drug}</div>
+              <div style={{ fontSize: 13, color: T.textDim, marginTop: 4 }}>
+                {med.dose} &middot; {med.route} &middot; {med.frequency} &middot; {med.duration}
+              </div>
+              {med.notes && <div style={{ fontSize: 12, color: T.textMuted, marginTop: 4 }}>{med.notes}</div>}
+              {brands.length > 0 ? (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+                  {brands.map((b, j) => (
+                    <div key={j} style={{ ...glassCard, padding: '6px 12px', borderRadius: 10, fontSize: 12 }}>
+                      <span style={{ fontWeight: 600, color: T.accent }}>{b.name}</span>
+                      <span style={{ color: T.textMuted, marginLeft: 6, fontSize: 10, fontFamily: T.mono }}>{b.company}</span>
+                      <span style={{ color: T.textDim, marginLeft: 6, fontSize: 10 }}>{b.strength} {b.form}</span>
+                    </div>
+                  ))}
                 </div>
-                {med.notes && <div style={{ fontSize: 12, color: T.textMuted, marginTop: 4 }}>{med.notes}</div>}
-              </div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <a
-                  href={medexSearchUrl(med.drug)}
-                  target="_blank" rel="noopener noreferrer"
-                  style={s.medexLink}
-                >
-                  MedEx — BD Trade Names &amp; Prices
-                </a>
-              </div>
+              ) : (
+                <a href={medexSearchUrl(med.drug)} target="_blank" rel="noopener noreferrer" style={{ ...s.medexLink, marginTop: 8, display: 'inline-block' }}>Search MedEx &rarr;</a>
+              )}
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
@@ -1147,6 +1178,148 @@ if (typeof document !== 'undefined' && !document.getElementById('cliniq-responsi
   document.head.appendChild(style)
 }
 
+// ─── BD Brand Pills ──────────────────────────────────────────────────
+function BDbrands({ drugName }) {
+  const brands = findBDbrands(drugName)
+  if (!brands.length) return <a href={medexSearchUrl(drugName)} target="_blank" rel="noopener noreferrer" className="no-print" style={{ color: T.accent, fontSize: 10, textDecoration: 'none' }}>Search MedEx &rarr;</a>
+  return (
+    <div className="no-print" style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
+      {brands.slice(0, 4).map((b, i) => (
+        <span key={i} style={{ fontSize: 9, padding: '2px 7px', borderRadius: 6, background: 'rgba(216,254,145,0.1)', border: '1px solid rgba(216,254,145,0.15)', color: T.accent, fontFamily: T.mono, whiteSpace: 'nowrap' }}>
+          {b.name} <span style={{ color: T.textMuted }}>({b.company})</span>
+        </span>
+      ))}
+    </div>
+  )
+}
+
+// ─── Welcome Screen ──────────────────────────────────────────────────
+function WelcomeScreen({ onRegister, t }) {
+  const [name, setName] = useState('')
+  const handleSubmit = () => {
+    if (!name.trim()) return
+    const doc = { name: name.trim(), id: crypto.randomUUID?.() || String(Date.now()), registeredAt: new Date().toISOString() }
+    saveDoctor(doc)
+    apiPost('/register', doc)
+    onRegister(doc)
+  }
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, fontFamily: T.body }}>
+      <div style={{ ...glassCard, padding: 40, maxWidth: 420, width: '100%', textAlign: 'center' }}>
+        <div style={{ width: 56, height: 56, borderRadius: 14, background: `linear-gradient(135deg, ${T.accent}, #a3e635)`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+          <svg viewBox="0 0 512 512" width="30" height="30">
+            <g transform="translate(256,256)" fill="none" stroke="#000" strokeWidth="32" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="0" y1="-195" x2="0" y2="195"/><circle cx="0" cy="-195" r="18" fill="#000" stroke="none"/>
+              <line x1="-65" y1="-145" x2="-85" y2="-155"/><line x1="65" y1="-145" x2="85" y2="-155"/>
+              <path d="M-75,-150 C-75,-120 -50,-100 0,-85 C50,-70 75,-50 75,-20"/><path d="M75,-150 C75,-120 50,-100 0,-85 C-50,-70 -75,-50 -75,-20"/>
+              <path d="M75,-20 C75,10 50,30 0,45 C-50,60 -75,80 -75,110"/><path d="M-75,-20 C-75,10 -50,30 0,45 C50,60 75,80 75,110"/>
+              <path d="M-75,110 C-75,140 -60,165 -45,185"/><path d="M75,110 C75,140 60,165 45,185"/>
+            </g>
+          </svg>
+        </div>
+        <div style={{ fontFamily: T.heading, fontSize: 28, color: T.text, marginBottom: 6 }}>ClinIQ</div>
+        <div style={{ fontFamily: T.mono, fontSize: 11, color: T.textMuted, marginBottom: 28, textTransform: 'uppercase', letterSpacing: 1.5 }}>{t('clinicalDecisionSupport')}</div>
+        <div style={{ fontSize: 15, color: T.textDim, marginBottom: 24 }}>Enter your name to get started</div>
+        <input
+          type="text" value={name} onChange={e => setName(e.target.value)}
+          placeholder="Dr. Your Name"
+          onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+          style={{ ...s.input, textAlign: 'center', fontSize: 16, marginBottom: 16 }}
+        />
+        <button style={{ ...s.btn(T.accent), width: '100%', padding: '14px 0', fontSize: 16 }} onClick={handleSubmit}>
+          Start
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Admin Panel ─────────────────────────────────────────────────────
+function AdminPanel({ onClose }) {
+  const [stats, setStats] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    apiAdminStats().then(setStats).catch(e => setError(e.message)).finally(() => setLoading(false))
+  }, [])
+
+  return (
+    <div style={{ minHeight: '100vh', padding: 20, fontFamily: T.body }}>
+      <div style={{ maxWidth: 920, margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <div>
+            <div style={{ fontFamily: T.heading, fontSize: 24, color: T.text }}>Admin Dashboard</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.textMuted }}>DR. ABRAR — DEVELOPER</div>
+          </div>
+          <button style={s.btnOutline} onClick={onClose}>Close</button>
+        </div>
+
+        {loading && <div style={{ ...s.card, textAlign: 'center', padding: 40 }}><div style={{ ...s.spinner, margin: '0 auto' }} /></div>}
+        {error && <div style={{ ...s.card, color: T.red }}>Error: {error}</div>}
+
+        {stats && (
+          <>
+            {/* Stats row */}
+            <div className="cliniq-stats-row" style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
+              <div style={s.statBox(T.accent)}>
+                <div style={{ ...s.label, marginBottom: 4 }}>REGISTERED DOCTORS</div>
+                <div style={{ fontSize: 32, fontWeight: 500, color: T.text, fontFamily: T.heading }}>{stats.totalDoctors}</div>
+              </div>
+              <div style={s.statBox(T.green)}>
+                <div style={{ ...s.label, marginBottom: 4 }}>TOTAL CONSULTATIONS</div>
+                <div style={{ fontSize: 32, fontWeight: 500, color: T.green, fontFamily: T.heading }}>{stats.totalConsultations}</div>
+              </div>
+            </div>
+
+            {/* Doctors list */}
+            <div style={{ ...s.label, fontSize: 13, marginBottom: 12 }}>Registered Doctors</div>
+            {stats.doctors.map(doc => (
+              <div key={doc.id} style={{ ...s.card, padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <div>
+                  <div style={{ fontWeight: 600, color: T.text, fontSize: 15 }}>{doc.name}</div>
+                  <div style={{ fontSize: 12, color: T.textMuted, fontFamily: T.mono }}>
+                    Registered: {doc.registeredAt?.slice(0, 10)} &middot; Last active: {doc.lastActive?.slice(0, 10) || 'Never'}
+                  </div>
+                </div>
+                <span style={s.badge(T.accent, T.accentDim)}>{doc.totalPatients} patients</span>
+              </div>
+            ))}
+
+            {/* Top Diagnoses */}
+            {stats.topDiagnoses?.length > 0 && (
+              <>
+                <div style={{ ...s.label, fontSize: 13, marginBottom: 12, marginTop: 24 }}>Top Diagnoses</div>
+                {stats.topDiagnoses.map(([dx, count], i) => (
+                  <div key={i} style={{ ...s.card, padding: '10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: T.text, fontSize: 14 }}>{dx}</span>
+                    <span style={s.badge(T.textDim, T.cardBorder)}>{count}</span>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {/* Daily Activity */}
+            {Object.keys(stats.dailyActivity || {}).length > 0 && (
+              <>
+                <div style={{ ...s.label, fontSize: 13, marginBottom: 12, marginTop: 24 }}>Daily Activity (last entries)</div>
+                <div style={s.card}>
+                  {Object.entries(stats.dailyActivity).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14).map(([date, count]) => (
+                    <div key={date} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${T.cardBorder}` }}>
+                      <span style={{ fontFamily: T.mono, fontSize: 13, color: T.textDim }}>{date}</span>
+                      <span style={{ fontFamily: T.heading, fontSize: 15, color: T.text }}>{count}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── App ─────────────────────────────────────────────────────────────
 const INITIAL_GENERAL_EXAM = {
   built: '', nourishment: '', decubitus: '',
@@ -1165,6 +1338,10 @@ const INITIAL_PATIENT = {
 }
 
 export default function App() {
+  const [doctor, setDoctor] = useState(() => loadDoctor())
+  const [showAdmin, setShowAdmin] = useState(false)
+  const logoPressTimer = useRef(null)
+
   const [lang, setLang] = useState(() => localStorage.getItem('cliniq_lang') || 'en')
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const t = useMemo(() => createT(lang), [lang])
@@ -1184,6 +1361,17 @@ export default function App() {
     localStorage.setItem('cliniq_lang', next)
   }
 
+  const handleLogoDown = () => { logoPressTimer.current = setTimeout(() => setShowAdmin(true), 3000) }
+  const handleLogoUp = () => { clearTimeout(logoPressTimer.current) }
+
+  const handleRegister = (doc) => { setDoctor(doc); setPatientLog(loadPatientLogForDoctor(doc.id)) }
+  const handleSignOut = () => { clearDoctor(); setDoctor(null) }
+
+  // Show welcome screen if no doctor registered
+  if (!doctor && !showAdmin) return <WelcomeScreen onRegister={handleRegister} t={t} />
+  // Show admin panel
+  if (showAdmin) return <AdminPanel onClose={() => setShowAdmin(false)} />
+
   const [view, setView] = useState('consultation')
   const [showDisclaimer, setShowDisclaimer] = useState(true)
   const [step, setStep] = useState(0)
@@ -1193,7 +1381,7 @@ export default function App() {
   const [txResult, setTxResult] = useState(null)
   const [activeTab, setActiveTab] = useState('diagnosis')
   const [error, setError] = useState(null)
-  const [patientLog, setPatientLog] = useState(() => loadPatientLog())
+  const [patientLog, setPatientLog] = useState(() => doctor ? loadPatientLogForDoctor(doctor.id) : [])
   const [currentLogId, setCurrentLogId] = useState(null)
   const [selectedEntry, setSelectedEntry] = useState(null)
   const [probingQuestions, setProbingQuestions] = useState(null)
@@ -1289,12 +1477,13 @@ export default function App() {
           id: crypto.randomUUID?.() || String(Date.now()),
           timestamp: new Date().toISOString(),
           date: todayStr(),
+          doctorId: doctor?.id, doctorName: doctor?.name,
           patient: { ...patient },
           dxResult, txResult: result, treatmentType: type,
           followUp: { scheduled: false, date: null, notes: '', completed: false },
         }
         const updated = addToLog(logEntry)
-        setPatientLog(updated)
+        setPatientLog(updated.filter(e => e.doctorId === doctor?.id))
         setCurrentLogId(logEntry.id)
         return
       }
@@ -1320,6 +1509,8 @@ export default function App() {
         id: crypto.randomUUID?.() || String(Date.now()),
         timestamp: new Date().toISOString(),
         date: todayStr(),
+        doctorId: doctor?.id,
+        doctorName: doctor?.name,
         patient: { ...patient },
         dxResult: dxResult,
         txResult: result,
@@ -1327,8 +1518,10 @@ export default function App() {
         followUp: { scheduled: false, date: null, notes: '', completed: false },
       }
       const updated = addToLog(logEntry)
-      setPatientLog(updated)
+      setPatientLog(updated.filter(e => e.doctorId === doctor?.id))
       setCurrentLogId(logEntry.id)
+      // Sync to server
+      apiPost('/log', { doctorId: doctor?.id, doctorName: doctor?.name, patientName: patient.name, diagnosis: dxResult.primary_diagnosis, treatmentType: type, timestamp: logEntry.timestamp })
     } catch (e) {
       setError(e.message)
       setPhase('diagnosed')
@@ -1374,7 +1567,7 @@ export default function App() {
       {/* Header */}
       <header style={s.header}>
         <div className="cliniq-header-nav" style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-          <div style={s.logo}>
+          <div style={s.logo} onMouseDown={handleLogoDown} onMouseUp={handleLogoUp} onTouchStart={handleLogoDown} onTouchEnd={handleLogoUp}>
             <div style={s.logoIcon}>
               <svg viewBox="0 0 512 512" width="26" height="26">
                 <g transform="translate(256,256)" fill="none" stroke="#000" strokeWidth="32" strokeLinecap="round" strokeLinejoin="round">
@@ -1393,7 +1586,7 @@ export default function App() {
             </div>
             <div>
               <div style={s.logoText}>{t('cliniq')}</div>
-              <div style={s.logoSub}>{t('clinicalDecisionSupport')}</div>
+              <div style={s.logoSub}>{doctor?.name || t('clinicalDecisionSupport')}</div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 4 }}>
@@ -1416,6 +1609,7 @@ export default function App() {
             <span style={{ ...s.badge(T.amber, T.amberDim), fontSize: 9 }}>OFFLINE</span>
           )}
           <button style={s.btnOutline} onClick={reset}>{t('newPatient')}</button>
+          <button style={{ ...s.btnSm('rgba(255,255,255,0.06)', T.textMuted), fontSize: 11 }} onClick={handleSignOut}>Sign Out</button>
         </div>
       </header>
 
