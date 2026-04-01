@@ -52,7 +52,7 @@ const s = {
     width: 38, height: 38, borderRadius: 10,
     background: `linear-gradient(135deg, ${T.accent}, #a3e635)`,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontFamily: T.heading, fontWeight: 500, fontSize: 18, color: '#000',
+    padding: 4, overflow: 'hidden',
   },
   logoText: { fontFamily: T.heading, fontWeight: 500, fontSize: 22, color: T.text, letterSpacing: -0.3 },
   logoSub: { fontFamily: T.mono, fontSize: 10, color: T.textMuted, marginTop: 1, letterSpacing: 0.5, textTransform: 'uppercase' },
@@ -381,12 +381,12 @@ function Step1({ p, setP, t }) {
   return (
     <>
       <div style={s.stepTitle}>{t('step1Title')}</div>
-      <div style={s.grid(2)}>
+      <div className="cliniq-grid-2" style={s.grid(2)}>
         <InputField label={t('patientName')} value={p.name} onChange={v => setP({ ...p, name: v })} placeholder={t('phFullName')} />
         <InputField label={t('age')} value={p.age} onChange={v => setP({ ...p, age: v })} placeholder={t('phYears')} type="number" />
       </div>
       <Field label={t('sex')}>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {[['male', 'Male'], ['female', 'Female'], ['other', 'Other']].map(([key, val]) => (
             <button key={val} style={s.toggle(p.sex === val)} onClick={() => setP({ ...p, sex: val })}>
               {t(key)}
@@ -396,12 +396,12 @@ function Step1({ p, setP, t }) {
       </Field>
       <InputField label={t('weightKg')} value={p.weight} onChange={v => setP({ ...p, weight: v })} placeholder={t('phKg')} type="number" />
       <div style={{ ...s.stepTitle, marginTop: 16, fontSize: 12 }}>{t('vitals')}</div>
-      <div style={s.grid(3)}>
+      <div className="cliniq-grid-3" style={s.grid(3)}>
         <InputField label={t('bloodPressure')} value={p.bp} onChange={v => setP({ ...p, bp: v })} placeholder={t('phBP')} />
         <InputField label={t('pulseMin')} value={p.pulse} onChange={v => setP({ ...p, pulse: v })} placeholder="72" type="number" />
         <InputField label={t('tempF')} value={p.temp} onChange={v => setP({ ...p, temp: v })} placeholder="98.6" />
       </div>
-      <div style={s.grid(2)}>
+      <div className="cliniq-grid-2" style={s.grid(2)}>
         <InputField label={t('spo2Pct')} value={p.spo2} onChange={v => setP({ ...p, spo2: v })} placeholder="98" type="number" />
         <InputField label={t('respRate')} value={p.rr} onChange={v => setP({ ...p, rr: v })} placeholder="16" type="number" />
       </div>
@@ -1109,8 +1109,14 @@ if (typeof document !== 'undefined' && !document.getElementById('cliniq-responsi
     @media (max-width: 640px) {
       .cliniq-grid-3 { grid-template-columns: 1fr !important; }
       .cliniq-grid-2 { grid-template-columns: 1fr !important; }
-      .cliniq-tabs { flex-wrap: wrap !important; }
+      .cliniq-tabs { flex-wrap: wrap !important; gap: 6px !important; }
       .cliniq-stats-row { flex-direction: column !important; }
+      .cliniq-header-nav { flex-direction: column !important; align-items: flex-start !important; }
+      .cliniq-header-actions { width: 100% !important; justify-content: space-between !important; }
+    }
+    @media (max-width: 480px) {
+      .cliniq-grid-3 { grid-template-columns: 1fr !important; gap: 8px !important; }
+      .cliniq-grid-2 { grid-template-columns: 1fr !important; gap: 8px !important; }
     }
     @media print {
       .no-print { display: none !important; }
@@ -1347,9 +1353,16 @@ export default function App() {
     <div style={{ ...s.container, fontFamily: bodyFont }}>
       {/* Header */}
       <header style={s.header}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+        <div className="cliniq-header-nav" style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
           <div style={s.logo}>
-            <div style={s.logoIcon}>C</div>
+            <div style={s.logoIcon}>
+              <svg viewBox="0 0 64 120" width="20" height="28" fill="#000">
+                <circle cx="32" cy="6" r="5"/>
+                <rect x="29" y="10" width="6" height="100" rx="3"/>
+                <path d="M32 25 C10 30, 10 45, 32 50 C54 55, 54 70, 32 75 C10 80, 10 95, 32 100" fill="none" stroke="#000" strokeWidth="7" strokeLinecap="round"/>
+                <circle cx="14" cy="28" r="4"/>
+              </svg>
+            </div>
             <div>
               <div style={s.logoText}>{t('cliniq')}</div>
               <div style={s.logoSub}>{t('clinicalDecisionSupport')}</div>
@@ -1364,7 +1377,7 @@ export default function App() {
             </button>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="cliniq-header-actions" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             onClick={toggleLang}
             style={{ ...s.btnSm(lang === 'bn' ? T.accent : 'rgba(255,255,255,0.1)', lang === 'bn' ? '#000' : T.textDim), fontSize: 13, fontFamily: T.bangla }}
