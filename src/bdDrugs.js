@@ -5,11 +5,14 @@
 const BD_DRUGS = [
   // ── Gastro ──
   { generic: 'Omeprazole', brands: [
-    { name: 'Losectil', company: 'SQUARE', strength: '20mg', form: 'Capsule' },
-    { name: 'Omenix', company: 'BEXIMCO', strength: '20mg', form: 'Capsule' },
-    { name: 'Seclo', company: 'ACI', strength: '20mg', form: 'Capsule' },
-    { name: 'Opal', company: 'INCEPTA', strength: '20mg', form: 'Capsule' },
-    { name: 'Xeldrin', company: 'OPSONIN', strength: '20mg', form: 'Capsule' },
+    { name: 'Proceptin', company: 'BEXIMCO', strength: '20mg', form: 'Capsule' },
+    { name: 'Xeldrin', company: 'ACI', strength: '20mg', form: 'Capsule' },
+    { name: 'Ometid', company: 'OPSONIN', strength: '20mg', form: 'Capsule' },
+    { name: 'Cosec', company: 'DRUG INTERNATIONAL', strength: '20mg', form: 'Capsule' },
+    { name: 'Seclo', company: 'SQUARE', strength: '20mg', form: 'Capsule' },
+    { name: 'Omenix', company: 'INCEPTA', strength: '20mg', form: 'Capsule' },
+    { name: 'Losectil', company: 'ESKAYEF', strength: '20mg', form: 'Capsule' },
+    { name: 'Opal', company: 'HEALTHCARE', strength: '20mg', form: 'Capsule' },
   ]},
   { generic: 'Esomeprazole', brands: [
     { name: 'Nexum', company: 'SQUARE', strength: '20mg', form: 'Capsule' },
@@ -43,10 +46,13 @@ const BD_DRUGS = [
   // ── Analgesics / Antipyretics ──
   { generic: 'Paracetamol', brands: [
     { name: 'Napa', company: 'BEXIMCO', strength: '500mg', form: 'Tablet' },
+    { name: 'Xcel', company: 'ACI', strength: '500mg', form: 'Tablet' },
+    { name: 'Renova', company: 'OPSONIN', strength: '500mg', form: 'Tablet' },
+    { name: 'Momodol', company: 'DRUG INTERNATIONAL', strength: '500mg', form: 'Suppository' },
     { name: 'Ace', company: 'SQUARE', strength: '500mg', form: 'Tablet' },
-    { name: 'Fast', company: 'ACI', strength: '500mg', form: 'Tablet' },
-    { name: 'Tylenol', company: 'OPSONIN', strength: '500mg', form: 'Tablet' },
     { name: 'Reset', company: 'INCEPTA', strength: '500mg', form: 'Tablet' },
+    { name: 'Fast', company: 'ACME', strength: '500mg', form: 'Tablet' },
+    { name: 'Tamen', company: 'ESKAYEF', strength: '500mg', form: 'Tablet' },
   ]},
   { generic: 'Diclofenac', brands: [
     { name: 'Clofenac', company: 'SQUARE', strength: '50mg', form: 'Tablet' },
@@ -69,10 +75,13 @@ const BD_DRUGS = [
 
   // ── Antibiotics ──
   { generic: 'Amoxicillin', brands: [
+    { name: 'Tycil', company: 'BEXIMCO', strength: '500mg', form: 'Capsule' },
+    { name: 'Avlomox', company: 'ACI', strength: '500mg', form: 'Capsule' },
+    { name: 'Moxin', company: 'OPSONIN', strength: '500mg', form: 'Capsule' },
+    { name: 'Demoxil', company: 'DRUG INTERNATIONAL', strength: '500mg', form: 'Capsule' },
     { name: 'Moxacil', company: 'SQUARE', strength: '500mg', form: 'Capsule' },
-    { name: 'Amoxil', company: 'BEXIMCO', strength: '500mg', form: 'Capsule' },
-    { name: 'Tycil', company: 'ACI', strength: '500mg', form: 'Capsule' },
-    { name: 'Fimoxyl', company: 'INCEPTA', strength: '500mg', form: 'Capsule' },
+    { name: 'Bactamox', company: 'RENATA', strength: '500mg', form: 'Capsule' },
+    { name: 'SK-mox', company: 'ESKAYEF', strength: '500mg', form: 'Capsule' },
   ]},
   { generic: 'Amoxicillin + Clavulanic Acid', brands: [
     { name: 'Moxaclav', company: 'SQUARE', strength: '625mg', form: 'Tablet' },
@@ -81,18 +90,24 @@ const BD_DRUGS = [
     { name: 'Clavam', company: 'ACI', strength: '625mg', form: 'Tablet' },
   ]},
   { generic: 'Azithromycin', brands: [
+    { name: 'Azithrocin', company: 'BEXIMCO', strength: '500mg', form: 'Tablet' },
+    { name: 'Odazyth', company: 'ACI', strength: '500mg', form: 'Tablet' },
+    { name: 'Azicin', company: 'OPSONIN', strength: '500mg', form: 'Tablet' },
+    { name: 'Azimex', company: 'DRUG INTERNATIONAL', strength: '500mg', form: 'Tablet' },
     { name: 'Zimax', company: 'SQUARE', strength: '500mg', form: 'Tablet' },
-    { name: 'Azith', company: 'BEXIMCO', strength: '500mg', form: 'Tablet' },
-    { name: 'Azithrocin', company: 'ACI', strength: '500mg', form: 'Tablet' },
-    { name: 'Azifast', company: 'OPSONIN', strength: '500mg', form: 'Tablet' },
-    { name: 'Azicin', company: 'INCEPTA', strength: '500mg', form: 'Tablet' },
+    { name: 'Tridosil', company: 'INCEPTA', strength: '500mg', form: 'Tablet' },
+    { name: 'Zithrox', company: 'ESKAYEF', strength: '500mg', form: 'Tablet' },
+    { name: 'Rozith', company: 'HEALTHCARE', strength: '500mg', form: 'Tablet' },
   ]},
   { generic: 'Ceftriaxone', brands: [
-    { name: 'Trizon', company: 'SQUARE', strength: '1g', form: 'Injection' },
-    { name: 'Ceftron', company: 'ACI', strength: '1g', form: 'Injection' },
-    { name: 'Diceft', company: 'DRUG INTERNATIONAL', strength: '1g', form: 'Injection' },
-    { name: 'Ceftrex', company: 'OPSONIN', strength: '1g', form: 'Injection' },
-    { name: 'Traxon', company: 'INCEPTA', strength: '1g', form: 'Injection' },
+    { name: 'Arixon', company: 'BEXIMCO', strength: '1g', form: 'Injection' },
+    { name: 'Aciphin', company: 'ACI', strength: '1g', form: 'Injection' },
+    { name: 'Traxon', company: 'OPSONIN', strength: '1g', form: 'Injection' },
+    { name: 'Dicephin', company: 'DRUG INTERNATIONAL', strength: '1g', form: 'Injection' },
+    { name: 'Ceftron', company: 'SQUARE', strength: '1g', form: 'Injection' },
+    { name: 'Exephin', company: 'INCEPTA', strength: '1g', form: 'Injection' },
+    { name: 'Triject', company: 'ESKAYEF', strength: '1g', form: 'Injection' },
+    { name: 'Oricef', company: 'HEALTHCARE', strength: '1g', form: 'Injection' },
   ]},
   { generic: 'Cefixime', brands: [
     { name: 'Cef-3', company: 'SQUARE', strength: '200mg', form: 'Capsule' },
@@ -137,10 +152,13 @@ const BD_DRUGS = [
 
   // ── Cardiac / Antihypertensives ──
   { generic: 'Amlodipine', brands: [
-    { name: 'Amdocal', company: 'SQUARE', strength: '5mg', form: 'Tablet' },
-    { name: 'Amlopin', company: 'BEXIMCO', strength: '5mg', form: 'Tablet' },
-    { name: 'Amlocal', company: 'ACI', strength: '5mg', form: 'Tablet' },
-    { name: 'Amdovas', company: 'OPSONIN', strength: '5mg', form: 'Tablet' },
+    { name: 'Amdocal', company: 'BEXIMCO', strength: '5mg', form: 'Tablet' },
+    { name: 'Cab', company: 'ACI', strength: '5mg', form: 'Tablet' },
+    { name: 'Amocal', company: 'OPSONIN', strength: '5mg', form: 'Tablet' },
+    { name: 'Amlocard', company: 'DRUG INTERNATIONAL', strength: '5mg', form: 'Tablet' },
+    { name: 'Camlodin', company: 'SQUARE', strength: '5mg', form: 'Tablet' },
+    { name: 'Amlotab', company: 'INCEPTA', strength: '5mg', form: 'Tablet' },
+    { name: 'Xelcard', company: 'HEALTHCARE', strength: '5mg', form: 'Tablet' },
   ]},
   { generic: 'Atenolol', brands: [
     { name: 'Tenolol', company: 'SQUARE', strength: '50mg', form: 'Tablet' },
@@ -174,10 +192,14 @@ const BD_DRUGS = [
     { name: 'Clot', company: 'ACI', strength: '75mg', form: 'Tablet' },
   ]},
   { generic: 'Atorvastatin', brands: [
-    { name: 'Atorva', company: 'SQUARE', strength: '10mg', form: 'Tablet' },
-    { name: 'Lipicon', company: 'ACI', strength: '10mg', form: 'Tablet' },
-    { name: 'Atocor', company: 'BEXIMCO', strength: '10mg', form: 'Tablet' },
-    { name: 'Atorvid', company: 'INCEPTA', strength: '10mg', form: 'Tablet' },
+    { name: 'Atova', company: 'BEXIMCO', strength: '10mg', form: 'Tablet' },
+    { name: 'Atasin', company: 'ACI', strength: '10mg', form: 'Tablet' },
+    { name: 'Avas', company: 'OPSONIN', strength: '10mg', form: 'Tablet' },
+    { name: 'Divastin', company: 'DRUG INTERNATIONAL', strength: '10mg', form: 'Tablet' },
+    { name: 'Anzitor', company: 'SQUARE', strength: '10mg', form: 'Tablet' },
+    { name: 'Tiginor', company: 'INCEPTA', strength: '10mg', form: 'Tablet' },
+    { name: 'Lipicon', company: 'ESKAYEF', strength: '10mg', form: 'Tablet' },
+    { name: 'Xelpid', company: 'HEALTHCARE', strength: '10mg', form: 'Tablet' },
   ]},
   { generic: 'Rosuvastatin', brands: [
     { name: 'Rosuvas', company: 'SQUARE', strength: '10mg', form: 'Tablet' },
@@ -203,10 +225,15 @@ const BD_DRUGS = [
 
   // ── Diabetes ──
   { generic: 'Metformin', brands: [
+    { name: 'Informet', company: 'BEXIMCO', strength: '500mg', form: 'Tablet' },
+    { name: 'Metform', company: 'ACI', strength: '500mg', form: 'Tablet' },
+    { name: 'Met', company: 'OPSONIN', strength: '500mg', form: 'Tablet' },
+    { name: 'Oramet', company: 'DRUG INTERNATIONAL', strength: '500mg', form: 'Tablet' },
     { name: 'Comet', company: 'SQUARE', strength: '500mg', form: 'Tablet' },
-    { name: 'Glucomet', company: 'ACI', strength: '500mg', form: 'Tablet' },
-    { name: 'Informet', company: 'INCEPTA', strength: '500mg', form: 'Tablet' },
-    { name: 'Bigomet', company: 'BEXIMCO', strength: '500mg', form: 'Tablet' },
+    { name: 'Nobesit', company: 'INCEPTA', strength: '500mg', form: 'Tablet' },
+    { name: 'Bigmet', company: 'RENATA', strength: '500mg', form: 'Tablet' },
+    { name: 'Glunor', company: 'ESKAYEF', strength: '500mg', form: 'Tablet' },
+    { name: 'Glymin', company: 'HEALTHCARE', strength: '500mg', form: 'Tablet' },
   ]},
   { generic: 'Glimepiride', brands: [
     { name: 'Amaryl', company: 'SQUARE', strength: '2mg', form: 'Tablet' },
