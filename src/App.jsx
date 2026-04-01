@@ -1356,11 +1356,19 @@ export default function App() {
         <div className="cliniq-header-nav" style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
           <div style={s.logo}>
             <div style={s.logoIcon}>
-              <svg viewBox="0 0 64 120" width="20" height="28" fill="#000">
-                <circle cx="32" cy="6" r="5"/>
-                <rect x="29" y="10" width="6" height="100" rx="3"/>
-                <path d="M32 25 C10 30, 10 45, 32 50 C54 55, 54 70, 32 75 C10 80, 10 95, 32 100" fill="none" stroke="#000" strokeWidth="7" strokeLinecap="round"/>
-                <circle cx="14" cy="28" r="4"/>
+              <svg viewBox="0 0 512 512" width="26" height="26">
+                <g transform="translate(256,256)" fill="none" stroke="#000" strokeWidth="32" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="0" y1="-195" x2="0" y2="195"/>
+                  <circle cx="0" cy="-195" r="18" fill="#000" stroke="none"/>
+                  <line x1="-65" y1="-145" x2="-85" y2="-155"/>
+                  <line x1="65" y1="-145" x2="85" y2="-155"/>
+                  <path d="M-75,-150 C-75,-120 -50,-100 0,-85 C50,-70 75,-50 75,-20"/>
+                  <path d="M75,-150 C75,-120 50,-100 0,-85 C-50,-70 -75,-50 -75,-20"/>
+                  <path d="M75,-20 C75,10 50,30 0,45 C-50,60 -75,80 -75,110"/>
+                  <path d="M-75,-20 C-75,10 -50,30 0,45 C50,60 75,80 75,110"/>
+                  <path d="M-75,110 C-75,140 -60,165 -45,185"/>
+                  <path d="M75,110 C75,140 60,165 45,185"/>
+                </g>
               </svg>
             </div>
             <div>
