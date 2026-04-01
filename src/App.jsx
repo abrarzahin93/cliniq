@@ -1,7 +1,24 @@
-import { useState, useCallback, useMemo, useEffect } from 'react'
-import { WARD_BOOK_SECTIONS } from './wardbook.js'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { createT } from './i18n.js'
-import { offlineDiagnosis, offlineTreatment } from './symptomChecker.js'
+
+// Lazy-load ward book and symptom checker — they're large and not needed on initial render
+let _wardBookSections = null
+let _symptomChecker = null
+
+async function getWardBook() {
+  if (!_wardBookSections) {
+    const mod = await import('./wardbook.js')
+    _wardBookSections = mod.WARD_BOOK_SECTIONS
+  }
+  return _wardBookSections
+}
+
+async function getSymptomChecker() {
+  if (!_symptomChecker) {
+    _symptomChecker = await import('./symptomChecker.js')
+  }
+  return _symptomChecker
+}
 
 // ─── Theme — Liquid Glass + Markopolo-inspired ──────────────────────
 const T = {
@@ -209,9 +226,10 @@ Respond ONLY with valid JSON matching this exact shape:
 }
 Do not include any text outside the JSON object.`
 
-function searchWardBook(diagnosis) {
+async function searchWardBook(diagnosis) {
+  const sections = await getWardBook()
   const terms = diagnosis.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 2)
-  const scored = WARD_BOOK_SECTIONS.map(section => {
+  const scored = sections.map(section => {
     const hay = (section.title + ' ' + section.content).toLowerCase()
     let score = 0
     for (const term of terms) {
@@ -1202,7 +1220,8 @@ export default function App() {
       let result
       if (!navigator.onLine) {
         // Offline fallback — local symptom checker
-        result = offlineDiagnosis(buildPatientSummary(patient))
+        const sc = await getSymptomChecker()
+        result = sc.offlineDiagnosis(buildPatientSummary(patient))
         setDxResult(result)
         setPhase('diagnosed') // skip probing offline
         return
@@ -1261,7 +1280,8 @@ export default function App() {
       let result
       if (!navigator.onLine) {
         // Offline fallback
-        result = offlineTreatment(dxResult.primary_diagnosis, buildPatientSummary(patient))
+        const sc2 = await getSymptomChecker()
+        result = sc2.offlineTreatment(dxResult.primary_diagnosis, buildPatientSummary(patient))
         setTxResult(result)
         setPhase('treated')
         setActiveTab('treatment')
