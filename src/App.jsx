@@ -190,6 +190,22 @@ const SYSTEM_DIAGNOSIS = `You are a clinical decision support system trained on 
 }
 Do not include any text outside the JSON object.`
 
+const SYSTEM_PROBING = `You are a clinical decision support system. Given the patient's initial data and preliminary differential diagnoses, generate 5-8 targeted follow-up questions the examining doctor should ask the patient to refine the diagnosis.
+
+Your questions should:
+- Probe for red flag symptoms the patient may not have mentioned voluntarily
+- Clarify ambiguous or vague presentations
+- Check for associated symptoms that differentiate between the top differential diagnoses
+- Explore relevant risk factors (occupational, travel, contact, dietary)
+
+Respond ONLY with valid JSON matching this exact shape:
+{
+  "questions": [
+    {"id": 1, "question": "string", "category": "red_flag" | "clarification" | "associated" | "risk_factor", "reason": "string"}
+  ]
+}
+Do not include any text outside the JSON object.`
+
 function searchWardBook(diagnosis) {
   const terms = diagnosis.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 2)
   const scored = WARD_BOOK_SECTIONS.map(section => {
@@ -272,7 +288,28 @@ function buildPatientSummary(p) {
   if (p.drugHistory) lines.push(`Drug History: ${p.drugHistory}`)
   if (p.investigations) lines.push(`Investigation History: ${p.investigations}`)
   if (p.socialFamily) lines.push(`Social/Family History: ${p.socialFamily}`)
-  if (p.generalExam) lines.push(`General Examination: ${p.generalExam}`)
+  if (p.generalExam && typeof p.generalExam === 'object') {
+    const ge = p.generalExam
+    const parts = []
+    if (ge.built) parts.push(`Built: ${ge.built}`)
+    if (ge.nourishment) parts.push(`Nourishment: ${ge.nourishment}`)
+    if (ge.decubitus) parts.push(`Decubitus: ${ge.decubitus}`)
+    if (ge.pallor) parts.push(`Pallor: ${ge.pallor}`)
+    if (ge.jaundice) parts.push(`Jaundice: ${ge.jaundice}`)
+    if (ge.cyanosis) parts.push(`Cyanosis: ${ge.cyanosis}`)
+    if (ge.clubbing) parts.push(`Clubbing: ${ge.clubbing}`)
+    if (ge.koilonychia) parts.push(`Koilonychia: ${ge.koilonychia}`)
+    if (ge.leukonychia) parts.push(`Leukonychia: ${ge.leukonychia}`)
+    if (ge.lymphadenopathy) parts.push(`Lymphadenopathy: ${ge.lymphadenopathy}${ge.lymphDetails ? ` (${ge.lymphDetails})` : ''}`)
+    if (ge.edema) parts.push(`Edema: ${ge.edema}${ge.edemaDetails ? ` - ${ge.edemaDetails}` : ''}`)
+    if (ge.dehydration) parts.push(`Dehydration: ${ge.dehydration}`)
+    if (ge.jvp) parts.push(`JVP: ${ge.jvp}`)
+    if (ge.thyroid) parts.push(`Thyroid: ${ge.thyroid}`)
+    if (ge.otherFindings) parts.push(`Other: ${ge.otherFindings}`)
+    if (parts.length) lines.push(`General Examination: ${parts.join(', ')}`)
+  } else if (p.generalExam) {
+    lines.push(`General Examination: ${p.generalExam}`)
+  }
   if (p.respiratory) lines.push(`Respiratory Exam: ${p.respiratory}`)
   if (p.abdominal) lines.push(`Abdominal Exam: ${p.abdominal}`)
   if (p.cnsCvs) lines.push(`CNS/CVS Exam: ${p.cnsCvs}`)
@@ -318,6 +355,20 @@ function TextareaField({ label, value, onChange, placeholder, rows }) {
         onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.background = 'rgba(255,255,255,0.07)' }}
         onBlur={e => { e.target.style.borderColor = T.cardBorder; e.target.style.background = 'rgba(255,255,255,0.04)' }}
       />
+    </Field>
+  )
+}
+
+function ToggleGroup({ label, options, value, onChange }) {
+  return (
+    <Field label={label}>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {options.map(opt => (
+          <button key={opt} style={{ ...s.toggle(value === opt), padding: '6px 14px', fontSize: 12 }} onClick={() => onChange(value === opt ? '' : opt)}>
+            {opt}
+          </button>
+        ))}
+      </div>
     </Field>
   )
 }
@@ -382,15 +433,52 @@ function Step3({ p, setP }) {
 }
 
 function Step4({ p, setP }) {
+  const ge = (typeof p.generalExam === 'object' && p.generalExam) ? p.generalExam : {}
+  const updateGE = (field, value) => setP({ ...p, generalExam: { ...ge, [field]: value } })
+
   return (
     <>
       <div style={s.stepTitle}>Step 4 — General Examination</div>
-      <TextareaField
-        label="General Examination Findings"
-        value={p.generalExam} onChange={v => setP({ ...p, generalExam: v })}
-        placeholder={"Built, nourishment, pallor, icterus, cyanosis, clubbing,\nlymphadenopathy, edema, JVP..."}
-        rows={6}
-      />
+
+      <div style={{ fontFamily: T.heading, fontSize: 15, color: T.textDim, marginBottom: 12 }}>General Survey</div>
+      <div className="cliniq-grid-3" style={s.grid(3)}>
+        <ToggleGroup label="Built" options={['Average', 'Thin', 'Obese']} value={ge.built || ''} onChange={v => updateGE('built', v)} />
+        <ToggleGroup label="Nourishment" options={['Well', 'Moderate', 'Poor']} value={ge.nourishment || ''} onChange={v => updateGE('nourishment', v)} />
+        <InputField label="Decubitus" value={ge.decubitus || ''} onChange={v => updateGE('decubitus', v)} placeholder="e.g. Propped up" />
+      </div>
+
+      <div style={{ fontFamily: T.heading, fontSize: 15, color: T.textDim, marginBottom: 12, marginTop: 8 }}>Inspection Findings</div>
+      <div className="cliniq-grid-3" style={s.grid(3)}>
+        <ToggleGroup label="Pallor (Anaemia)" options={['Absent', 'Mild', 'Moderate', 'Severe']} value={ge.pallor || ''} onChange={v => updateGE('pallor', v)} />
+        <ToggleGroup label="Jaundice (Icterus)" options={['Absent', 'Present']} value={ge.jaundice || ''} onChange={v => updateGE('jaundice', v)} />
+        <ToggleGroup label="Cyanosis" options={['Absent', 'Peripheral', 'Central']} value={ge.cyanosis || ''} onChange={v => updateGE('cyanosis', v)} />
+        <ToggleGroup label="Clubbing" options={['Absent', 'Present']} value={ge.clubbing || ''} onChange={v => updateGE('clubbing', v)} />
+        <ToggleGroup label="Koilonychia" options={['Absent', 'Present']} value={ge.koilonychia || ''} onChange={v => updateGE('koilonychia', v)} />
+        <ToggleGroup label="Leukonychia" options={['Absent', 'Present']} value={ge.leukonychia || ''} onChange={v => updateGE('leukonychia', v)} />
+      </div>
+
+      <div style={{ fontFamily: T.heading, fontSize: 15, color: T.textDim, marginBottom: 12, marginTop: 8 }}>Other Findings</div>
+      <div className="cliniq-grid-2" style={s.grid(2)}>
+        <div>
+          <ToggleGroup label="Lymphadenopathy" options={['Absent', 'Present']} value={ge.lymphadenopathy || ''} onChange={v => updateGE('lymphadenopathy', v)} />
+          {ge.lymphadenopathy === 'Present' && (
+            <InputField label="Lymph Node Details" value={ge.lymphDetails || ''} onChange={v => updateGE('lymphDetails', v)} placeholder="Location, size, consistency..." />
+          )}
+        </div>
+        <div>
+          <ToggleGroup label="Edema" options={['Absent', 'Pitting', 'Non-pitting']} value={ge.edema || ''} onChange={v => updateGE('edema', v)} />
+          {ge.edema && ge.edema !== 'Absent' && (
+            <InputField label="Edema Location" value={ge.edemaDetails || ''} onChange={v => updateGE('edemaDetails', v)} placeholder="Pedal, sacral, facial..." />
+          )}
+        </div>
+      </div>
+      <div className="cliniq-grid-3" style={s.grid(3)}>
+        <ToggleGroup label="Dehydration" options={['None', 'Mild', 'Moderate', 'Severe']} value={ge.dehydration || ''} onChange={v => updateGE('dehydration', v)} />
+        <ToggleGroup label="JVP" options={['Normal', 'Raised']} value={ge.jvp || ''} onChange={v => updateGE('jvp', v)} />
+        <ToggleGroup label="Thyroid" options={['Normal', 'Enlarged']} value={ge.thyroid || ''} onChange={v => updateGE('thyroid', v)} />
+      </div>
+
+      <TextareaField label="Additional Notes" value={ge.otherFindings || ''} onChange={v => updateGE('otherFindings', v)} placeholder="Any other findings..." rows={3} />
     </>
   )
 }
@@ -585,6 +673,95 @@ function PrescriptionTab({ patient, dx, tx }) {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── Probing Phase ───────────────────────────────────────────────────
+const PROBING_CATEGORY_COLORS = {
+  red_flag: [T.red, T.redDim],
+  clarification: [T.amber, T.amberDim],
+  associated: [T.accent, T.accentDim],
+  risk_factor: [T.green, T.greenDim],
+}
+
+function ProbingPhase({ dxResult, probingQuestions, probingAnswers, setProbingAnswers, onRefine, onSkip }) {
+  const updateAnswer = (id, value) => setProbingAnswers(prev => ({ ...prev, [id]: value }))
+  const setQuickAnswer = (id, quick) => {
+    const current = probingAnswers[id] || ''
+    const cleaned = current.replace(/^(Yes|No|N\/A)\s*[-–—]?\s*/i, '').trim()
+    updateAnswer(id, `${quick}${cleaned ? ' — ' + cleaned : ''}`)
+  }
+
+  return (
+    <div>
+      {/* Preliminary diagnosis */}
+      <div style={{ ...s.card, borderLeft: `3px solid ${T.accent}` }}>
+        <div style={s.label}>Preliminary Diagnosis</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
+          <span style={{ fontFamily: T.heading, fontSize: 20, color: T.text }}>{dxResult?.primary_diagnosis}</span>
+          {dxResult?.confidence && <ConfidenceBadge level={dxResult.confidence} />}
+        </div>
+        <div style={{ fontSize: 13, color: T.textMuted, marginTop: 6 }}>
+          Answer the questions below to refine this diagnosis, or skip to confirm it.
+        </div>
+      </div>
+
+      {/* Loading or questions */}
+      {!probingQuestions ? (
+        <div style={{ ...s.card, textAlign: 'center', padding: 50 }}>
+          <div style={{ ...s.spinner, margin: '0 auto 16px' }} />
+          <div style={{ fontFamily: T.mono, fontSize: 13, color: T.accent }}>Generating clinical interview questions...</div>
+        </div>
+      ) : (
+        <>
+          <div style={{ fontFamily: T.heading, fontSize: 16, color: T.textDim, marginBottom: 16 }}>
+            Clinical Interview — {probingQuestions.length} Questions
+          </div>
+          {probingQuestions.map((q, i) => {
+            const [catColor, catBg] = PROBING_CATEGORY_COLORS[q.category] || [T.textDim, T.cardBorder]
+            return (
+              <div key={q.id} style={{ ...s.card, borderLeft: `3px solid ${catColor}`, padding: '18px 22px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
+                  <span style={{ fontFamily: T.mono, fontSize: 11, color: T.textMuted }}>Q{i + 1}</span>
+                  <span style={s.badge(catColor, catBg)}>{q.category?.replace('_', ' ')}</span>
+                </div>
+                <div style={{ fontSize: 15, color: T.text, lineHeight: 1.5, marginBottom: 6 }}>{q.question}</div>
+                <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 12, fontFamily: T.mono }}>{q.reason}</div>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+                  {['Yes', 'No', 'N/A'].map(opt => (
+                    <button
+                      key={opt}
+                      style={{ ...s.toggle((probingAnswers[q.id] || '').startsWith(opt)), padding: '5px 14px', fontSize: 12 }}
+                      onClick={() => setQuickAnswer(q.id, opt)}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  value={probingAnswers[q.id] || ''}
+                  onChange={e => updateAnswer(q.id, e.target.value)}
+                  placeholder="Details or elaboration..."
+                  style={{ ...s.input, fontSize: 13 }}
+                  onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.background = 'rgba(255,255,255,0.07)' }}
+                  onBlur={e => { e.target.style.borderColor = T.cardBorder; e.target.style.background = 'rgba(255,255,255,0.04)' }}
+                />
+              </div>
+            )
+          })}
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
+            <button style={s.btnOutline} onClick={onSkip}>
+              Skip — Confirm Diagnosis
+            </button>
+            <button style={s.btn(T.accent)} onClick={onRefine}>
+              Refine Diagnosis
+            </button>
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -943,11 +1120,19 @@ if (typeof document !== 'undefined' && !document.getElementById('cliniq-responsi
 }
 
 // ─── App ─────────────────────────────────────────────────────────────
+const INITIAL_GENERAL_EXAM = {
+  built: '', nourishment: '', decubitus: '',
+  pallor: '', jaundice: '', cyanosis: '', clubbing: '', koilonychia: '', leukonychia: '',
+  lymphadenopathy: '', lymphDetails: '', edema: '', edemaDetails: '',
+  dehydration: '', jvp: '', thyroid: '', otherFindings: '',
+}
+
 const INITIAL_PATIENT = {
   name: '', age: '', sex: '', weight: '',
   bp: '', pulse: '', temp: '', spo2: '', rr: '',
   complaints: '', pastHistory: '', drugHistory: '',
-  investigations: '', socialFamily: '', generalExam: '',
+  investigations: '', socialFamily: '',
+  generalExam: { ...INITIAL_GENERAL_EXAM },
   respiratory: '', abdominal: '', cnsCvs: '',
 }
 
@@ -964,6 +1149,8 @@ export default function App() {
   const [patientLog, setPatientLog] = useState(() => loadPatientLog())
   const [currentLogId, setCurrentLogId] = useState(null)
   const [selectedEntry, setSelectedEntry] = useState(null)
+  const [probingQuestions, setProbingQuestions] = useState(null)
+  const [probingAnswers, setProbingAnswers] = useState({})
 
   const reset = useCallback(() => {
     setStep(0)
@@ -975,6 +1162,8 @@ export default function App() {
     setError(null)
     setCurrentLogId(null)
     setView('consultation')
+    setProbingQuestions(null)
+    setProbingAnswers({})
   }, [])
 
   const submitDiagnosis = async () => {
@@ -983,7 +1172,20 @@ export default function App() {
     try {
       const result = await callClaude(SYSTEM_DIAGNOSIS, buildPatientSummary(patient))
       setDxResult(result)
-      setPhase('diagnosed')
+      // Enter probing phase — generate follow-up questions
+      setPhase('probing')
+      setProbingQuestions(null)
+      setProbingAnswers({})
+      try {
+        const summary = buildPatientSummary(patient)
+          + `\n\nPreliminary Diagnosis: ${result.primary_diagnosis}`
+          + `\nDifferentials: ${result.differentials?.map(d => d.diagnosis).join(', ')}`
+        const probeResult = await callClaude(SYSTEM_PROBING, summary)
+        setProbingQuestions(probeResult.questions)
+      } catch {
+        // If probing fails, skip to diagnosed (non-critical)
+        setPhase('diagnosed')
+      }
     } catch (e) {
       setError(e.message)
       setPhase('intake')
@@ -991,11 +1193,42 @@ export default function App() {
     }
   }
 
+  const submitRefinedDiagnosis = async () => {
+    setPhase('diagnosing')
+    setError(null)
+    try {
+      let enrichedSummary = buildPatientSummary(patient)
+      enrichedSummary += '\n\nClinical Interview Follow-up Findings:\n'
+      probingQuestions?.forEach(q => {
+        const answer = probingAnswers[q.id]
+        if (answer && answer.trim()) {
+          enrichedSummary += `Q: ${q.question}\nA: ${answer}\n\n`
+        }
+      })
+      const result = await callClaude(SYSTEM_DIAGNOSIS, enrichedSummary)
+      setDxResult(result)
+      setPhase('diagnosed')
+    } catch (e) {
+      setError(e.message)
+      setPhase('probing')
+    }
+  }
+
+  const skipProbing = () => setPhase('diagnosed')
+
   const submitTreatment = async (type) => {
     setPhase('treating')
     setError(null)
     try {
-      const summary = buildPatientSummary(patient) + `\n\nDiagnosis: ${dxResult.primary_diagnosis}\nConfidence: ${dxResult.confidence}\nReasoning: ${dxResult.diagnosis_reasoning}`
+      let summary = buildPatientSummary(patient) + `\n\nDiagnosis: ${dxResult.primary_diagnosis}\nConfidence: ${dxResult.confidence}\nReasoning: ${dxResult.diagnosis_reasoning}`
+      // Append probing answers if available
+      if (probingQuestions && Object.keys(probingAnswers).length > 0) {
+        summary += '\n\nClinical Interview Follow-up:\n'
+        probingQuestions.forEach(q => {
+          const answer = probingAnswers[q.id]
+          if (answer && answer.trim()) summary += `Q: ${q.question}\nA: ${answer}\n`
+        })
+      }
       const matchedSections = searchWardBook(dxResult.primary_diagnosis + ' ' + (patient.complaints || ''))
       const wardBookContext = matchedSections.length > 0
         ? matchedSections.map(sec => `--- ${sec.title} ---\n${sec.content}`).join('\n\n')
@@ -1034,7 +1267,11 @@ export default function App() {
   }
 
   const handleLoadPatient = (entry) => {
-    setPatient({ ...entry.patient })
+    const loadedPatient = { ...entry.patient }
+    if (typeof loadedPatient.generalExam === 'string') {
+      loadedPatient.generalExam = { ...INITIAL_GENERAL_EXAM, otherFindings: loadedPatient.generalExam }
+    }
+    setPatient(loadedPatient)
     setView('consultation')
     setPhase('intake')
     setStep(0)
@@ -1160,6 +1397,18 @@ export default function App() {
               <div style={{ fontFamily: T.mono, fontSize: 13, color: T.accent }}>Analyzing patient data...</div>
               <div style={{ fontSize: 13, color: T.textMuted, marginTop: 8 }}>Running differential diagnosis</div>
             </div>
+          )}
+
+          {/* Probing Phase */}
+          {phase === 'probing' && (
+            <ProbingPhase
+              dxResult={dxResult}
+              probingQuestions={probingQuestions}
+              probingAnswers={probingAnswers}
+              setProbingAnswers={setProbingAnswers}
+              onRefine={submitRefinedDiagnosis}
+              onSkip={skipProbing}
+            />
           )}
 
           {/* Loading — Treating */}
