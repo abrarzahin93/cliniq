@@ -115,9 +115,13 @@ const s = {
   }),
   progressBar: { display: 'flex', gap: 4, marginBottom: 18 },
   progressStep: (active, done) => ({
-    flex: 1, height: 3, borderRadius: 2,
-    background: done ? T.accent : active ? 'rgba(77,163,255,0.4)' : 'rgba(255,255,255,0.08)',
-    transition: 'background 0.4s ease',
+    flex: 1, height: 4, borderRadius: 3,
+    background: done ? T.accent : active
+      ? `linear-gradient(90deg, ${T.accent}, rgba(77,163,255,0.3), ${T.accent})`
+      : 'rgba(255,255,255,0.06)',
+    backgroundSize: active ? '200% 100%' : 'auto',
+    animation: active ? 'progressShimmer 2s ease infinite' : 'none',
+    transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
   }),
   stepTitle: {
     fontFamily: T.heading, fontSize: 18, color: T.accent, marginBottom: 18,
@@ -149,9 +153,9 @@ const s = {
     padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 10,
   },
   spinner: {
-    width: 22, height: 22, border: '2px solid rgba(255,255,255,0.08)',
-    borderTop: `2px solid ${T.accent}`,
-    borderRadius: '50%', animation: 'spin 0.8s linear infinite',
+    width: 28, height: 28, border: '2.5px solid rgba(255,255,255,0.06)',
+    borderTop: `2.5px solid ${T.accent}`,
+    borderRadius: '50%', animation: 'spin 0.7s linear infinite, pulseGlow 2s ease infinite',
   },
   rxPad: {
     ...glassCard, padding: '28px 24px', maxWidth: 640, margin: '0 auto',
@@ -1226,7 +1230,22 @@ function MedicationsWithPrices({ medications }) {
 if (typeof document !== 'undefined' && !document.getElementById('cliniq-keyframes')) {
   const style = document.createElement('style')
   style.id = 'cliniq-keyframes'
-  style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`
+  style.textContent = `
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(77,163,255,0); } 50% { box-shadow: 0 0 20px 4px rgba(77,163,255,0.15); } }
+    @keyframes progressShimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+    @keyframes breathe { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+    .cliniq-fade-in { animation: fadeInUp 0.4s ease both; }
+    .cliniq-fade-in-delay-1 { animation: fadeInUp 0.4s ease 0.05s both; }
+    .cliniq-fade-in-delay-2 { animation: fadeInUp 0.4s ease 0.1s both; }
+    .cliniq-fade-in-delay-3 { animation: fadeInUp 0.4s ease 0.15s both; }
+    .cliniq-scale-in { animation: scaleIn 0.3s ease both; }
+    .cliniq-slide-in { animation: slideInRight 0.35s ease both; }
+  `
   document.head.appendChild(style)
 }
 
@@ -1438,11 +1457,6 @@ export default function App() {
   const handleRegister = (doc) => { setDoctor(doc); setPatientLog(loadPatientLogForDoctor(doc.id)) }
   const handleSignOut = () => { clearDoctor(); setDoctor(null) }
 
-  // Show welcome screen if no doctor registered
-  if (!doctor && !showAdmin) return <WelcomeScreen onRegister={handleRegister} t={t} />
-  // Show admin panel
-  if (showAdmin) return <AdminPanel onClose={() => setShowAdmin(false)} />
-
   const [view, setView] = useState('consultation')
   const [showDisclaimer, setShowDisclaimer] = useState(true)
   const [step, setStep] = useState(0)
@@ -1452,11 +1466,18 @@ export default function App() {
   const [txResult, setTxResult] = useState(null)
   const [activeTab, setActiveTab] = useState('diagnosis')
   const [error, setError] = useState(null)
-  const [patientLog, setPatientLog] = useState(() => doctor ? loadPatientLogForDoctor(doctor.id) : [])
+  const [patientLog, setPatientLog] = useState(() => {
+    const d = loadDoctor(); return d ? loadPatientLogForDoctor(d.id) : []
+  })
   const [currentLogId, setCurrentLogId] = useState(null)
   const [selectedEntry, setSelectedEntry] = useState(null)
   const [probingQuestions, setProbingQuestions] = useState(null)
   const [probingAnswers, setProbingAnswers] = useState({})
+
+  // Show welcome screen if no doctor registered
+  if (!doctor && !showAdmin) return <WelcomeScreen onRegister={handleRegister} t={t} />
+  // Show admin panel
+  if (showAdmin) return <AdminPanel onClose={() => setShowAdmin(false)} />
 
   const reset = useCallback(() => {
     setStep(0)
@@ -1636,35 +1657,32 @@ export default function App() {
   return (
     <div style={{ ...s.container, fontFamily: bodyFont }}>
       {/* Header */}
-      <header style={s.header}>
-        {/* Row 1: Logo + Nav + Actions */}
-        <div className="cliniq-header-nav" style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+      <header style={{ ...s.header, flexDirection: 'column', alignItems: 'stretch', gap: 0 }}>
+        {/* Row 1: Logo + compact actions */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <div style={s.logo} onMouseDown={handleLogoDown} onMouseUp={handleLogoUp} onTouchStart={handleLogoDown} onTouchEnd={handleLogoUp}>
-            <img src="/favicon.png" alt="ClinIQ" style={{ width: 34, height: 34, borderRadius: 9 }} />
+            <img src="/favicon.png" alt="ClinIQ" style={{ width: 32, height: 32, borderRadius: 8 }} />
             <div>
-              <div style={{ ...s.logoText, fontSize: 18 }}>{t('cliniq')}</div>
-              <div style={{ ...s.logoSub, fontSize: 9 }}>{doctor?.name}</div>
+              <div style={{ ...s.logoText, fontSize: 17 }}>{t('cliniq')}</div>
+              <div style={{ ...s.logoSub, fontSize: 8 }}>{doctor?.name}</div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 3, marginLeft: 'auto' }}>
-            <button style={{ ...s.toggle(view === 'consultation'), padding: '6px 12px', fontSize: 12, borderRadius: 8 }} onClick={() => { setView('consultation'); setSelectedEntry(null) }}>
-              {t('consultation')}
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <button onClick={toggleLang} style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${T.cardBorder}`, borderRadius: 7, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: T.textMuted, fontFamily: T.bangla }}>
+              {lang === 'en' ? 'বাং' : 'EN'}
             </button>
-            <button style={{ ...s.toggle(view === 'dashboard'), padding: '6px 12px', fontSize: 12, borderRadius: 8 }} onClick={() => { setView('dashboard'); setSelectedEntry(null) }}>
-              {t('dashboard')}
-            </button>
+            {!isOnline && <span style={{ ...s.badge(T.amber, T.amberDim), fontSize: 8 }}>OFF</span>}
+            <button onClick={reset} style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${T.cardBorder}`, borderRadius: 7, padding: '4px 9px', cursor: 'pointer', fontSize: 18, color: T.textDim, lineHeight: 1 }}>+</button>
           </div>
         </div>
-        <div className="cliniq-header-actions" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <button
-            onClick={toggleLang}
-            style={{ ...s.btnSm(lang === 'bn' ? T.accent : 'rgba(255,255,255,0.08)', lang === 'bn' ? '#000' : T.textMuted), fontSize: 11, padding: '5px 10px', fontFamily: T.bangla }}
-          >
-            {lang === 'en' ? 'বাং' : 'EN'}
+        {/* Row 2: Full-width nav pills */}
+        <div style={{ display: 'flex', gap: 4, width: '100%', marginTop: 10 }}>
+          <button style={{ ...s.toggle(view === 'consultation'), padding: '7px 0', fontSize: 12, borderRadius: 8, flex: 1, textAlign: 'center' }} onClick={() => { setView('consultation'); setSelectedEntry(null) }}>
+            {t('consultation')}
           </button>
-          {!isOnline && <span style={{ ...s.badge(T.amber, T.amberDim), fontSize: 8 }}>OFF</span>}
-          <button style={{ ...s.btnOutline, padding: '6px 12px', fontSize: 12 }} onClick={reset}>{t('newPatient')}</button>
-          <button className="cliniq-mobile-hide" style={{ ...s.btnSm('rgba(255,255,255,0.05)', T.textMuted), fontSize: 10, padding: '5px 10px' }} onClick={handleSignOut}>Sign Out</button>
+          <button style={{ ...s.toggle(view === 'dashboard'), padding: '7px 0', fontSize: 12, borderRadius: 8, flex: 1, textAlign: 'center' }} onClick={() => { setView('dashboard'); setSelectedEntry(null) }}>
+            {t('dashboard')}
+          </button>
         </div>
       </header>
 
@@ -1737,7 +1755,7 @@ export default function App() {
                   <div key={i} style={s.progressStep(i === step, i < step)} />
                 ))}
               </div>
-              <div style={s.card}>
+              <div key={step} className="cliniq-fade-in" style={s.card}>
                 <StepComponent p={patient} setP={setPatient} t={t} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
@@ -1762,10 +1780,10 @@ export default function App() {
 
           {/* Loading — Diagnosing */}
           {phase === 'diagnosing' && (
-            <div style={{ ...s.card, textAlign: 'center', padding: 60 }}>
-              <div style={{ ...s.spinner, margin: '0 auto 16px' }} />
-              <div style={{ fontFamily: T.mono, fontSize: 13, color: T.accent }}>{t('analyzingPatientData')}</div>
-              <div style={{ fontSize: 13, color: T.textMuted, marginTop: 8 }}>{t('runningDifferentialDx')}</div>
+            <div className="cliniq-scale-in" style={{ ...s.card, textAlign: 'center', padding: 60 }}>
+              <div style={{ ...s.spinner, margin: '0 auto 20px' }} />
+              <div style={{ fontFamily: T.mono, fontSize: 13, color: T.accent, animation: 'breathe 2s ease infinite' }}>{t('analyzingPatientData')}</div>
+              <div style={{ fontSize: 12, color: T.textMuted, marginTop: 8 }}>{t('runningDifferentialDx')}</div>
             </div>
           )}
 
@@ -1784,9 +1802,9 @@ export default function App() {
 
           {/* Loading — Treating */}
           {phase === 'treating' && (
-            <div style={{ ...s.card, textAlign: 'center', padding: 60 }}>
-              <div style={{ ...s.spinner, margin: '0 auto 16px' }} />
-              <div style={{ fontFamily: T.mono, fontSize: 13, color: T.green }}>{t('generatingTreatment')}</div>
+            <div className="cliniq-scale-in" style={{ ...s.card, textAlign: 'center', padding: 60 }}>
+              <div style={{ ...s.spinner, margin: '0 auto 20px' }} />
+              <div style={{ fontFamily: T.mono, fontSize: 13, color: T.green, animation: 'breathe 2s ease infinite' }}>{t('generatingTreatment')}</div>
             </div>
           )}
 
