@@ -1519,6 +1519,10 @@ if (typeof document !== 'undefined' && !document.getElementById('cliniq-keyframe
     .cliniq-skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 75%); background-size: 200% 100%; animation: skeletonShimmer 1.5s ease infinite; border-radius: 8px; }
     button:active { transform: scale(0.97) !important; }
     .cliniq-card-hover:hover { border-color: rgba(77,163,255,0.2) !important; box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 16px rgba(77,163,255,0.08) !important; transform: translateY(-1px); }
+    input:focus, textarea:focus { border-color: #4da3ff !important; background: rgba(77,163,255,0.04) !important; box-shadow: 0 0 0 3px rgba(77,163,255,0.1), inset 0 1px 2px rgba(0,0,0,0.2) !important; }
+    .cliniq-orb { position: fixed; border-radius: 50%; filter: blur(100px); opacity: 0.12; pointer-events: none; z-index: 0; }
+    .cliniq-orb-1 { width: 400px; height: 400px; background: #4da3ff; top: -100px; right: -100px; }
+    .cliniq-orb-2 { width: 300px; height: 300px; background: #7c5cfc; bottom: 100px; left: -80px; }
   `
   document.head.appendChild(style)
 }
@@ -1930,6 +1934,10 @@ export default function App() {
 
   return (
     <div style={{ ...s.container, fontFamily: bodyFont }}>
+      {/* Ambient gradient orbs for depth */}
+      <div className="cliniq-orb cliniq-orb-1" />
+      <div className="cliniq-orb cliniq-orb-2" />
+
       {/* Header — Greeting style */}
       <header style={{ ...s.header, flexDirection: 'row', padding: '12px 16px' }}>
         <div style={s.logo} onMouseDown={handleLogoDown} onMouseUp={handleLogoUp} onTouchStart={handleLogoDown} onTouchEnd={handleLogoUp}>
