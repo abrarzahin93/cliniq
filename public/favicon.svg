@@ -1,23 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#1a1a1a"/>
-  <g transform="translate(256,256)" fill="none" stroke="#D8FE91" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
-    <!-- Rod -->
-    <line x1="0" y1="-195" x2="0" y2="195"/>
-    <!-- Top ball -->
-    <circle cx="0" cy="-195" r="18" fill="#D8FE91" stroke="none"/>
-    <!-- Left snake head/tail ends -->
-    <line x1="-65" y1="-145" x2="-85" y2="-155"/>
-    <line x1="65" y1="-145" x2="85" y2="-155"/>
-    <!-- Snake wrapping - left to right crossings -->
-    <!-- First crossing: left comes from top-left, crosses to right -->
-    <path d="M-75,-150 C-75,-120 -50,-100 0,-85 C50,-70 75,-50 75,-20"/>
-    <!-- Right snake: from top-right, crosses to left -->
-    <path d="M75,-150 C75,-120 50,-100 0,-85 C-50,-70 -75,-50 -75,-20"/>
-    <!-- Second crossing -->
-    <path d="M75,-20 C75,10 50,30 0,45 C-50,60 -75,80 -75,110"/>
-    <path d="M-75,-20 C-75,10 -50,30 0,45 C50,60 75,80 75,110"/>
-    <!-- Bottom tails splitting -->
-    <path d="M-75,110 C-75,140 -60,165 -45,185" stroke-linecap="round"/>
-    <path d="M75,110 C75,140 60,165 45,185" stroke-linecap="round"/>
-  </g>
+  <rect width="512" height="512" rx="100" fill="#0a0f1e"/>
+  <!-- i -->
+  <circle cx="155" cy="135" r="22" fill="#fff"/>
+  <rect x="137" y="190" width="36" height="180" rx="18" fill="#fff"/>
+  <!-- Q -->
+  <path d="M350,260 A100,100 0 1,0 350,261 Z" fill="none" stroke="#fff" stroke-width="36" stroke-linecap="round"/>
+  <!-- Q tail -->
+  <line x1="400" y1="340" x2="440" y2="400" stroke="#fff" stroke-width="36" stroke-linecap="round"/>
+  <!-- Medical cross inside Q -->
+  <rect x="325" y="230" width="50" height="14" rx="7" fill="#4da3ff"/>
+  <rect x="343" y="212" width="14" height="50" rx="7" fill="#4da3ff"/>
 </svg>

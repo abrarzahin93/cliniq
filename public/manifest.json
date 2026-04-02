@@ -4,8 +4,8 @@
   "description": "AI-assisted clinical decision support for doctors",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#D8FE91",
+  "background_color": "#060a14",
+  "theme_color": "#4da3ff",
   "icons": [
     { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
   ]

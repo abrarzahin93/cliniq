@@ -7,13 +7,13 @@ globalStyles.textContent = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: 'Inter', -apple-system, sans-serif;
-    background: #000000;
-    color: #f0f0f0;
+    background: #060a14;
+    color: #edf2f7;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
   }
   input, textarea, select, button { font-family: inherit; }
-  ::selection { background: rgba(216, 254, 145, 0.2); }
+  ::selection { background: rgba(77, 163, 255, 0.25); }
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
