@@ -44,7 +44,7 @@ const T = {
   surface2: '#131b2e',
   shadow: '0 4px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(77,163,255,0.06)',
   glowBlue: '0 0 20px rgba(77,163,255,0.08)',
-  heading: "'Canela', Georgia, serif",
+  heading: "'Inter', -apple-system, sans-serif",
   body: "'Inter', -apple-system, sans-serif",
   bangla: "'Noto Sans Bengali', 'Inter', sans-serif",
   mono: "'IBM Plex Mono', monospace",
@@ -75,7 +75,7 @@ const s = {
     width: 36, height: 36, borderRadius: 10,
     overflow: 'hidden', flexShrink: 0,
   },
-  logoText: { fontFamily: T.heading, fontWeight: 500, fontSize: 20, color: T.text, letterSpacing: -0.3 },
+  logoText: { fontFamily: T.heading, fontWeight: 700, fontSize: 20, color: T.text, letterSpacing: -0.3 },
   logoSub: { fontFamily: T.mono, fontSize: 9, color: T.accent, marginTop: 1, letterSpacing: 0.5, textTransform: 'uppercase' },
   btn: (bg, color = '#fff') => ({
     padding: '11px 24px', border: 'none', borderRadius: 12, cursor: 'pointer',
@@ -130,7 +130,7 @@ const s = {
     boxShadow: done ? '0 0 8px rgba(77,163,255,0.3)' : 'none',
   }),
   stepTitle: {
-    fontFamily: T.heading, fontSize: 20, color: T.text, marginBottom: 20,
+    fontFamily: T.heading, fontWeight: 700, fontSize: 20, color: T.text, marginBottom: 20,
     letterSpacing: -0.3,
   },
   badge: (color, bgColor) => ({
