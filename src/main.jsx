@@ -19,12 +19,15 @@ globalStyles.textContent = `
   ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
   @media print {
     body * { visibility: hidden !important; }
-    #rx-print, #rx-print * { visibility: visible !important; }
+    .no-print { display: none !important; }
+    #rx-print, #rx-print * { visibility: visible !important; color: #111 !important; }
     #rx-print {
       position: absolute !important; left: 0 !important; top: 0 !important;
-      width: 100% !important; background: white !important; color: black !important;
-      padding: 40px !important;
+      width: 100% !important; background: white !important; color: #111 !important;
+      padding: 40px !important; backdrop-filter: none !important;
+      border: none !important;
     }
+    #rx-print div, #rx-print span { border-color: #ddd !important; background: transparent !important; }
   }
 `
 document.head.appendChild(globalStyles)

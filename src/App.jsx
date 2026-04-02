@@ -153,8 +153,11 @@ const s = {
     borderRadius: '50%', animation: 'spin 0.8s linear infinite',
   },
   rxPad: {
+    ...glassCard, padding: '28px 24px', maxWidth: 640, margin: '0 auto',
+  },
+  rxPadPrint: {
     background: '#fff', color: '#111', padding: 40, borderRadius: 8,
-    fontFamily: T.body, maxWidth: 700, margin: '0 auto',
+    fontFamily: "'Inter', sans-serif", maxWidth: 640, margin: '0 auto',
   },
   statBox: (color) => ({
     ...glassCard, padding: '18px 22px', flex: 1, minWidth: 140,
@@ -671,56 +674,117 @@ function TreatmentTab({ tx }) {
 function PrescriptionTab({ patient, dx, tx }) {
   return (
     <div>
-      <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+      {/* Screen view — dark glass aesthetic */}
+      <div id="rx-print" style={s.rxPad}>
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ fontFamily: T.heading, fontSize: 28, color: T.accent, letterSpacing: -0.5 }}>Rx</div>
+          <div style={{ fontFamily: T.mono, fontSize: 9, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 2, marginTop: 4 }}>ClinIQ Prescription</div>
+        </div>
+
+        {/* Patient info */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20, padding: '14px 18px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: `1px solid ${T.cardBorder}` }}>
+          <div>
+            <div style={{ fontFamily: T.mono, fontSize: 9, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>Patient</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: T.text, marginTop: 2 }}>{patient.name || '—'}</div>
+          </div>
+          <div>
+            <div style={{ fontFamily: T.mono, fontSize: 9, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>Age / Sex</div>
+            <div style={{ fontSize: 15, color: T.text, marginTop: 2 }}>{patient.age || '—'} / {patient.sex || '—'}</div>
+          </div>
+          <div>
+            <div style={{ fontFamily: T.mono, fontSize: 9, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>Weight</div>
+            <div style={{ fontSize: 14, color: T.text, marginTop: 2 }}>{patient.weight ? `${patient.weight} kg` : '—'}</div>
+          </div>
+          <div>
+            <div style={{ fontFamily: T.mono, fontSize: 9, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>Date</div>
+            <div style={{ fontSize: 14, color: T.text, marginTop: 2 }}>{new Date().toLocaleDateString()}</div>
+          </div>
+        </div>
+
+        {/* Diagnosis */}
+        <div style={{ marginBottom: 24, padding: '10px 16px', background: T.accentDim, borderRadius: 10, border: `1px solid rgba(216,254,145,0.15)` }}>
+          <span style={{ fontFamily: T.mono, fontSize: 9, color: T.accent, textTransform: 'uppercase', letterSpacing: 1 }}>Diagnosis </span>
+          <span style={{ fontSize: 14, color: T.text, fontWeight: 500 }}>{dx?.primary_diagnosis || '—'}</span>
+        </div>
+
+        {/* Medication cards */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
+          {tx?.medications?.map((med, i) => {
+            const brands = findBDbrands(med.drug)
+            const topBrand = brands[0]
+            return (
+              <div key={i} style={{ padding: '16px 18px', background: 'rgba(255,255,255,0.03)', borderRadius: 14, border: `1px solid ${T.cardBorder}`, borderLeft: `3px solid ${T.accent}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    {/* Top brand name — big */}
+                    <div style={{ fontSize: 17, fontWeight: 700, color: T.text }}>
+                      {topBrand ? topBrand.name : med.drug}
+                      {topBrand && <span style={{ fontSize: 11, fontWeight: 500, color: T.accent, marginLeft: 8, fontFamily: T.mono }}>{topBrand.company}</span>}
+                    </div>
+                    {/* Generic name — small */}
+                    <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2, fontStyle: 'italic' }}>
+                      {med.drug} {med.dose}
+                    </div>
+                  </div>
+                  <span style={{ fontFamily: T.mono, fontSize: 11, color: T.textMuted, minWidth: 20, textAlign: 'right' }}>#{i + 1}</span>
+                </div>
+
+                {/* Dosage details */}
+                <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
+                  {[
+                    ['Route', med.route],
+                    ['Freq', med.frequency],
+                    ['Duration', med.duration],
+                  ].map(([label, val]) => val && (
+                    <div key={label}>
+                      <div style={{ fontFamily: T.mono, fontSize: 8, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
+                      <div style={{ fontSize: 13, color: T.textDim, marginTop: 1 }}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+                {med.notes && <div style={{ fontSize: 12, color: T.textMuted, marginTop: 8, fontStyle: 'italic' }}>{med.notes}</div>}
+
+                {/* Other brand options */}
+                {brands.length > 1 && (
+                  <div className="no-print" style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.cardBorder}` }}>
+                    <span style={{ fontSize: 9, color: T.textMuted, fontFamily: T.mono, alignSelf: 'center', marginRight: 4 }}>ALSO:</span>
+                    {brands.slice(1, 5).map((b, j) => (
+                      <span key={j} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.cardBorder}`, color: T.textDim, fontFamily: T.mono }}>
+                        {b.name} <span style={{ color: T.textMuted, fontSize: 9 }}>({b.company})</span>
+                      </span>
+                    ))}
+                    <a href={medexSearchUrl(med.drug)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 9, color: T.accent, textDecoration: 'none', alignSelf: 'center', fontFamily: T.mono }}>
+                      More &rarr;
+                    </a>
+                  </div>
+                )}
+                {brands.length === 0 && (
+                  <div className="no-print" style={{ marginTop: 8 }}>
+                    <a href={medexSearchUrl(med.drug)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: T.accent, textDecoration: 'none', fontFamily: T.mono }}>
+                      Find trade names &rarr;
+                    </a>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Signature */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ borderTop: `1px solid ${T.glassBorder}`, width: 180, marginBottom: 6 }} />
+            <div style={{ fontFamily: T.mono, fontSize: 9, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>Clinician Signature</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Print button */}
+      <div className="no-print" style={{ display: 'flex', justifyContent: 'center', marginTop: 20 }}>
         <button style={s.btn(T.accent)} onClick={() => window.print()}>
           Print Prescription
         </button>
-      </div>
-      <div id="rx-print" style={s.rxPad}>
-        <div style={{ borderBottom: '2px solid #111', paddingBottom: 16, marginBottom: 16, textAlign: 'center' }}>
-          <div style={{ fontSize: 22, fontWeight: 700, fontFamily: T.mono }}>Rx</div>
-          <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>Generated by ClinIQ Clinical Decision Support</div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16, fontSize: 13 }}>
-          <div><strong>Patient:</strong> {patient.name || '—'}</div>
-          <div><strong>Age/Sex:</strong> {patient.age || '—'} / {patient.sex || '—'}</div>
-          <div><strong>Weight:</strong> {patient.weight ? `${patient.weight} kg` : '—'}</div>
-          <div><strong>Date:</strong> {new Date().toLocaleDateString()}</div>
-        </div>
-        <div style={{ marginBottom: 16, fontSize: 13 }}>
-          <strong>Diagnosis:</strong> {dx?.primary_diagnosis || '—'}
-        </div>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 24 }}>
-          <thead>
-            <tr style={{ background: '#f1f5f9' }}>
-              {['#', 'Drug', 'Dose', 'Route', 'Frequency', 'Duration', 'Notes'].map(h => (
-                <th key={h} style={{ padding: '8px 6px', textAlign: 'left', borderBottom: '1px solid #ddd', fontFamily: T.mono, fontSize: 10, textTransform: 'uppercase' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {tx?.medications?.map((med, i) => (
-              <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-                <td style={{ padding: '8px 6px' }}>{i + 1}</td>
-                <td style={{ padding: '8px 6px' }}>
-                  <span style={{ fontWeight: 600 }}>{med.drug}</span>
-                  <BDbrands drugName={med.drug} />
-                </td>
-                <td style={{ padding: '8px 6px' }}>{med.dose}</td>
-                <td style={{ padding: '8px 6px' }}>{med.route}</td>
-                <td style={{ padding: '8px 6px' }}>{med.frequency}</td>
-                <td style={{ padding: '8px 6px' }}>{med.duration}</td>
-                <td style={{ padding: '8px 6px', color: '#666' }}>{med.notes}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div style={{ marginTop: 60, display: 'flex', justifyContent: 'flex-end' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ borderTop: '1px solid #111', width: 200, marginBottom: 4 }} />
-            <div style={{ fontSize: 12, color: '#666' }}>Clinician Signature</div>
-          </div>
-        </div>
       </div>
     </div>
   )
