@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { createT } from './i18n.js'
-import { findBDbrands } from './bdDrugs.js'
+import { findBDbrands, getBDprice } from './bdDrugs.js'
 
 // Lazy-load ward book and symptom checker — they're large and not needed on initial render
 let _wardBookSections = null
@@ -287,9 +287,9 @@ async function searchWardBook(diagnosis) {
 }
 
 const SYSTEM_TREATMENT = (type, wardBookContext) => {
-  let base = `You are a clinical decision support system trained on Davidson's Principles and Practice of Medicine and Harrison's Principles of Internal Medicine. Provide a ${type} treatment plan.`
+  let base = `You are a clinical decision support system. Provide a ${type} treatment plan.`
   if (wardBookContext) {
-    base += `\n\nIMPORTANT: You have access to the following clinical ward book protocols from the Department of Medicine, MMCH. Use these protocols as your PRIMARY reference for drug names, doses, routes, and frequencies. Follow these protocols closely when they match the patient's condition:\n\n${wardBookContext}`
+    base += `\n\nCRITICAL: You MUST follow the MMCH Ward Book protocols below EXACTLY. Do NOT deviate from these protocols. Use the EXACT drug names, doses, routes, and frequencies written in the ward book. Do NOT substitute, modify, or add drugs that are not in the protocol. If the ward book says "Inj. Ceftriaxone 1gm IV 12 hourly", you must prescribe exactly that — not a different antibiotic or different dose. Only add drugs beyond the ward book protocol if there is a clear clinical need not covered by the protocol.\n\nMMCH WARD BOOK PROTOCOL:\n${wardBookContext}`
   }
   base += `\n\nRespond ONLY with valid JSON matching this exact shape:
 {
@@ -740,10 +740,11 @@ function RxMedLine({ med, index }) {
         <span style={{ fontSize: 14, color: T.text }}>{med.duration}</span>
       </div>
 
-      {/* Line 4: Doctor-only info (no-print) — reason + route */}
-      <div className="no-print" style={{ marginTop: 6, paddingLeft: 38, fontSize: 11, color: T.textMuted, fontStyle: 'italic', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+      {/* Line 4: Doctor-only info (no-print) — reason + route + price */}
+      <div className="no-print" style={{ marginTop: 6, paddingLeft: 38, fontSize: 11, color: T.textMuted, fontStyle: 'italic', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         {med.notes && <span>({med.notes})</span>}
         {med.route && <span style={{ color: T.textDim }}>Route: {med.route}</span>}
+        {(() => { const p = getBDprice(med.drug); return p ? <span style={{ color: T.amber, fontStyle: 'normal', fontFamily: T.mono, fontSize: 10 }}>~{p >= 100 ? `${p}` : `${p}`} BDT/unit</span> : null })()}
       </div>
     </div>
   )

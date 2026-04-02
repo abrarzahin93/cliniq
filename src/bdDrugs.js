@@ -397,30 +397,64 @@ const BD_DRUGS = [
   ]},
 ]
 
+// Approximate per-unit price in BDT (from medex.com.bd, 2024-2025)
+const PRICE_MAP = {
+  'omeprazole': 4, 'esomeprazole': 6, 'pantoprazole': 5, 'ranitidine': 2,
+  'domperidone': 2, 'metoclopramide': 1.5,
+  'paracetamol': 1.5, 'diclofenac': 2, 'ibuprofen': 2, 'ketorolac': 4, 'tramadol': 5,
+  'amoxicillin': 5, 'amoxicillin + clavulanic acid': 12, 'azithromycin': 15,
+  'ceftriaxone': 60, 'cefixime': 12, 'cefuroxime': 15, 'ciprofloxacin': 5,
+  'levofloxacin': 10, 'metronidazole': 2, 'doxycycline': 3, 'flucloxacillin': 6,
+  'meropenem': 350,
+  'amlodipine': 3, 'atenolol': 2, 'bisoprolol': 4, 'losartan': 5,
+  'enalapril': 2, 'ramipril': 4, 'aspirin': 1, 'clopidogrel': 5,
+  'atorvastatin': 6, 'rosuvastatin': 8, 'furosemide': 2, 'spironolactone': 3,
+  'isosorbide mononitrate': 4, 'nitroglycerin': 3,
+  'metformin': 3, 'glimepiride': 5, 'gliclazide': 4,
+  'insulin (soluble)': 450, 'insulin (mixed)': 450,
+  'salbutamol': 2, 'montelukast': 8, 'theophylline': 3,
+  'budesonide + formoterol': 450,
+  'prednisolone': 2, 'dexamethasone': 2, 'hydrocortisone': 40,
+  'diazepam': 1, 'phenytoin': 2, 'carbamazepine': 3, 'haloperidol': 2,
+  'chlorpromazine': 2,
+  'fexofenadine': 5, 'cetirizine': 3, 'chlorpheniramine': 1,
+  'ors': 12, 'calcium + vitamin d': 5, 'iron + folic acid': 3,
+  'potassium chloride': 3, 'vitamin b complex': 2,
+  'enoxaparin': 250, 'warfarin': 3,
+  'atropine': 8, 'adrenaline (epinephrine)': 10,
+  'n-acetylcysteine': 15, 'ondansetron': 4, 'baclofen': 3,
+  'lactulose': 120, 'hyoscine butylbromide': 4,
+  'albendazole': 5, 'fluconazole': 10,
+  'artemether + lumefantrine': 8,
+}
+
 // Priority order for sorting
 const PRIORITY_COMPANIES = ['BEXIMCO', 'ACI', 'OPSONIN', 'DRUG INTERNATIONAL', 'SQUARE']
 
 export function findBDbrands(drugName) {
   if (!drugName) return []
   const q = drugName.toLowerCase().trim()
-  // Exact generic match first
   let match = BD_DRUGS.find(d => d.generic.toLowerCase() === q)
+  if (!match) match = BD_DRUGS.find(d => d.generic.toLowerCase().includes(q) || q.includes(d.generic.toLowerCase()))
   if (!match) {
-    // Partial match
-    match = BD_DRUGS.find(d => d.generic.toLowerCase().includes(q) || q.includes(d.generic.toLowerCase()))
-  }
-  if (!match) {
-    // Word-level match
     const words = q.split(/\s+/)
     match = BD_DRUGS.find(d => words.some(w => w.length > 3 && d.generic.toLowerCase().includes(w)))
   }
   if (!match) return []
-  // Sort: priority companies first
+  const price = PRICE_MAP[match.generic.toLowerCase()] || null
   return [...match.brands].sort((a, b) => {
     const ai = PRIORITY_COMPANIES.indexOf(a.company)
     const bi = PRIORITY_COMPANIES.indexOf(b.company)
     return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
-  })
+  }).map(b => ({ ...b, price }))
+}
+
+export function getBDprice(drugName) {
+  if (!drugName) return null
+  const q = drugName.toLowerCase().trim()
+  if (PRICE_MAP[q]) return PRICE_MAP[q]
+  const match = BD_DRUGS.find(d => d.generic.toLowerCase().includes(q) || q.includes(d.generic.toLowerCase()))
+  return match ? (PRICE_MAP[match.generic.toLowerCase()] || null) : null
 }
 
 export default BD_DRUGS
