@@ -21,140 +21,149 @@ async function getSymptomChecker() {
   return _symptomChecker
 }
 
-// ─── Theme — Navy + Blue Medical ─────────────────────────────────────
+// ─── Theme — Premium Navy Medical ────────────────────────────────────
 const T = {
   bg: '#060a14',
-  card: 'rgba(255,255,255,0.03)',
-  cardHover: 'rgba(255,255,255,0.06)',
-  cardBorder: 'rgba(255,255,255,0.07)',
-  glass: 'rgba(255,255,255,0.04)',
-  glassBorder: 'rgba(255,255,255,0.10)',
-  accent: '#4da3ff',        // medical blue from favicon
+  card: 'rgba(13,19,34,0.85)',
+  cardHover: 'rgba(19,27,46,0.95)',
+  cardBorder: 'rgba(77,163,255,0.08)',
+  glass: 'rgba(13,19,34,0.75)',
+  glassBorder: 'rgba(77,163,255,0.12)',
+  accent: '#4da3ff',
+  accentLight: '#7dbdff',
   accentDim: 'rgba(77,163,255,0.12)',
+  accentGrad: 'linear-gradient(135deg, #4da3ff, #7c5cfc)',
   accentDark: '#0a1628',
-  green: '#34d399', greenDim: 'rgba(52,211,153,0.12)',
+  green: '#34d399', greenDim: 'rgba(52,211,153,0.10)',
   amber: '#fbbf24', amberDim: 'rgba(251,191,36,0.10)',
   red: '#f87171', redDim: 'rgba(248,113,113,0.10)',
   text: '#edf2f7',
-  textDim: 'rgba(255,255,255,0.55)',
-  textMuted: 'rgba(255,255,255,0.30)',
+  textDim: 'rgba(255,255,255,0.60)',
+  textMuted: 'rgba(255,255,255,0.32)',
   surface1: '#0d1322',
   surface2: '#131b2e',
+  shadow: '0 4px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(77,163,255,0.06)',
+  glowBlue: '0 0 20px rgba(77,163,255,0.08)',
   heading: "'Canela', Georgia, serif",
   body: "'Inter', -apple-system, sans-serif",
   bangla: "'Noto Sans Bengali', 'Inter', sans-serif",
   mono: "'IBM Plex Mono', monospace",
 }
 
-const blur = '20px'
+const blur = '24px'
 const glassCard = {
   background: T.glass,
   backdropFilter: `blur(${blur})`,
   WebkitBackdropFilter: `blur(${blur})`,
   border: `1px solid ${T.glassBorder}`,
-  borderRadius: 16,
+  borderRadius: 18,
+  boxShadow: T.shadow,
 }
 
 // ─── Styles ──────────────────────────────────────────────────────────
 const s = {
-  container: { maxWidth: 920, margin: '0 auto', padding: '16px 12px', fontFamily: T.body },
+  container: { maxWidth: 920, margin: '0 auto', padding: '16px 12px 90px', fontFamily: T.body },
   header: {
     ...glassCard,
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '10px 14px', marginBottom: 20,
+    padding: '10px 16px', marginBottom: 22,
     flexWrap: 'wrap', gap: 8,
     position: 'sticky', top: 8, zIndex: 50,
   },
-  logo: { display: 'flex', alignItems: 'center', gap: 12 },
+  logo: { display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' },
   logoIcon: {
-    width: 38, height: 38, borderRadius: 10,
-    background: T.surface1,
-    border: `1px solid ${T.glassBorder}`,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: 4, overflow: 'hidden',
+    width: 36, height: 36, borderRadius: 10,
+    overflow: 'hidden', flexShrink: 0,
   },
-  logoText: { fontFamily: T.heading, fontWeight: 500, fontSize: 22, color: T.text, letterSpacing: -0.3 },
-  logoSub: { fontFamily: T.mono, fontSize: 10, color: T.textMuted, marginTop: 1, letterSpacing: 0.5, textTransform: 'uppercase' },
-  btn: (bg, color = '#000') => ({
-    padding: '10px 22px', border: 'none', borderRadius: 10, cursor: 'pointer',
+  logoText: { fontFamily: T.heading, fontWeight: 500, fontSize: 20, color: T.text, letterSpacing: -0.3 },
+  logoSub: { fontFamily: T.mono, fontSize: 9, color: T.accent, marginTop: 1, letterSpacing: 0.5, textTransform: 'uppercase' },
+  btn: (bg, color = '#fff') => ({
+    padding: '11px 24px', border: 'none', borderRadius: 12, cursor: 'pointer',
     fontWeight: 600, fontSize: 14, color, background: bg,
-    transition: 'all 0.25s ease', fontFamily: T.body,
+    transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)', fontFamily: T.body,
+    boxShadow: bg === T.accent ? '0 4px 16px rgba(77,163,255,0.3)' : 'none',
   }),
-  btnSm: (bg, color = '#000') => ({
-    padding: '7px 16px', border: 'none', borderRadius: 8, cursor: 'pointer',
+  btnSm: (bg, color = '#fff') => ({
+    padding: '7px 16px', border: 'none', borderRadius: 10, cursor: 'pointer',
     fontWeight: 600, fontSize: 12, color, background: bg,
-    transition: 'all 0.25s ease', fontFamily: T.body,
+    transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)', fontFamily: T.body,
   }),
   btnOutline: {
-    padding: '10px 22px', border: `1px solid ${T.glassBorder}`, borderRadius: 10,
+    padding: '10px 22px', border: `1px solid ${T.glassBorder}`, borderRadius: 12,
     cursor: 'pointer', fontWeight: 500, fontSize: 14, color: T.textDim,
-    background: 'rgba(255,255,255,0.05)', transition: 'all 0.25s ease', fontFamily: T.body,
+    background: 'rgba(255,255,255,0.04)', transition: 'all 0.3s ease', fontFamily: T.body,
     backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
   },
   card: {
-    ...glassCard, padding: '18px 16px', marginBottom: 14,
+    ...glassCard, padding: '20px 18px', marginBottom: 16,
+    transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
   },
   label: {
-    fontFamily: T.mono, fontSize: 10, fontWeight: 500, color: T.textMuted,
-    textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 6, display: 'block',
+    fontFamily: T.mono, fontSize: 10, fontWeight: 600, color: T.textMuted,
+    textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8, display: 'block',
   },
   input: {
-    width: '100%', padding: '10px 14px',
-    background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.cardBorder}`,
-    borderRadius: 10, color: T.text, fontSize: 15, outline: 'none', fontFamily: T.body,
-    transition: 'border-color 0.25s, background 0.25s',
+    width: '100%', padding: '12px 16px',
+    background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(77,163,255,0.08)`,
+    borderRadius: 12, color: T.text, fontSize: 15, outline: 'none', fontFamily: T.body,
+    transition: 'all 0.3s ease',
+    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.2)',
   },
   textarea: {
-    width: '100%', padding: '10px 14px',
-    background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.cardBorder}`,
-    borderRadius: 10, color: T.text, fontSize: 15, outline: 'none', fontFamily: T.body,
-    minHeight: 90, resize: 'vertical', transition: 'border-color 0.25s, background 0.25s',
+    width: '100%', padding: '12px 16px',
+    background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(77,163,255,0.08)`,
+    borderRadius: 12, color: T.text, fontSize: 15, outline: 'none', fontFamily: T.body,
+    minHeight: 90, resize: 'vertical', transition: 'all 0.3s ease',
+    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.2)',
   },
   grid: (cols, gap = 14) => ({
     display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap,
   }),
-  progressBar: { display: 'flex', gap: 4, marginBottom: 18 },
+  progressBar: { display: 'flex', gap: 5, marginBottom: 20 },
   progressStep: (active, done) => ({
-    flex: 1, height: 4, borderRadius: 3,
-    background: done ? T.accent : active
-      ? `linear-gradient(90deg, ${T.accent}, rgba(77,163,255,0.3), ${T.accent})`
-      : 'rgba(255,255,255,0.06)',
-    backgroundSize: active ? '200% 100%' : 'auto',
+    flex: 1, height: 4, borderRadius: 4,
+    transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+    backgroundColor: done ? T.accent : active ? 'transparent' : 'rgba(255,255,255,0.05)',
+    backgroundImage: active ? `linear-gradient(90deg, ${T.accent}, rgba(124,92,252,0.4), ${T.accent})` : 'none',
+    backgroundSize: '200% 100%',
     animation: active ? 'progressShimmer 2s ease infinite' : 'none',
-    transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+    boxShadow: done ? '0 0 8px rgba(77,163,255,0.3)' : 'none',
   }),
   stepTitle: {
-    fontFamily: T.heading, fontSize: 18, color: T.accent, marginBottom: 18,
-    letterSpacing: -0.2,
+    fontFamily: T.heading, fontSize: 20, color: T.text, marginBottom: 20,
+    letterSpacing: -0.3,
   },
   badge: (color, bgColor) => ({
-    display: 'inline-block', padding: '4px 12px', borderRadius: 999, fontSize: 10,
+    display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 12px', borderRadius: 999, fontSize: 10,
     fontWeight: 600, fontFamily: T.mono, color, background: bgColor, textTransform: 'uppercase',
     letterSpacing: 0.5,
   }),
   tab: (active) => ({
-    padding: '10px 20px', border: 'none', borderRadius: 10, cursor: 'pointer',
+    padding: '10px 18px', border: 'none', borderRadius: 12, cursor: 'pointer',
     fontWeight: 600, fontSize: 13, fontFamily: T.body,
-    color: active ? '#000' : T.textMuted,
-    background: active ? T.accent : 'transparent',
-    transition: 'all 0.25s ease',
+    color: active ? '#fff' : T.textMuted,
+    background: active ? T.accentGrad : 'transparent',
+    transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
+    boxShadow: active ? '0 4px 16px rgba(77,163,255,0.25)' : 'none',
+    transform: active ? 'scale(1.02)' : 'scale(1)',
   }),
   toggle: (active) => ({
-    padding: '7px 14px', border: `1px solid ${active ? T.accent : T.cardBorder}`,
-    borderRadius: 9, cursor: 'pointer', fontWeight: 500, fontSize: 13,
-    color: active ? '#000' : T.textDim,
-    background: active ? T.accent : 'rgba(255,255,255,0.04)',
-    transition: 'all 0.25s ease', fontFamily: T.body,
+    padding: '8px 16px', border: `1.5px solid ${active ? T.accent : 'rgba(77,163,255,0.1)'}`,
+    borderRadius: 10, cursor: 'pointer', fontWeight: 500, fontSize: 13,
+    color: active ? '#fff' : T.textDim,
+    background: active ? T.accentGrad : 'rgba(255,255,255,0.03)',
+    transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)', fontFamily: T.body,
+    boxShadow: active ? '0 2px 12px rgba(77,163,255,0.2)' : 'none',
   }),
   disclaimer: {
     ...glassCard,
-    background: 'rgba(251,191,36,0.06)',
-    border: '1px solid rgba(251,191,36,0.15)',
+    background: 'rgba(251,191,36,0.05)',
+    border: '1px solid rgba(251,191,36,0.12)',
     padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 10,
   },
   spinner: {
-    width: 28, height: 28, border: '2.5px solid rgba(255,255,255,0.06)',
-    borderTop: `2.5px solid ${T.accent}`,
+    width: 32, height: 32, border: '3px solid rgba(77,163,255,0.1)',
+    borderTop: `3px solid ${T.accent}`,
     borderRadius: '50%', animation: 'spin 0.7s linear infinite, pulseGlow 2s ease infinite',
   },
   rxPad: {
@@ -165,15 +174,30 @@ const s = {
     fontFamily: "'Inter', sans-serif", maxWidth: 640, margin: '0 auto',
   },
   statBox: (color) => ({
-    ...glassCard, padding: '18px 22px', flex: 1, minWidth: 140,
+    ...glassCard, padding: '16px 18px', flex: 1, minWidth: 130,
     borderLeft: `3px solid ${color}`,
+    background: `linear-gradient(135deg, rgba(13,19,34,0.9), rgba(13,19,34,0.7))`,
   }),
   medexLink: {
     color: T.accent, fontSize: 11, fontFamily: T.mono, textDecoration: 'none',
-    padding: '3px 10px', border: `1px solid rgba(77,163,255,0.2)`, borderRadius: 6,
-    display: 'inline-block', transition: 'all 0.25s',
+    padding: '3px 10px', border: `1px solid rgba(77,163,255,0.15)`, borderRadius: 8,
+    display: 'inline-block', transition: 'all 0.3s',
     background: 'rgba(77,163,255,0.06)',
   },
+  bottomNav: {
+    position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
+    background: 'rgba(6,10,20,0.92)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+    borderTop: `1px solid ${T.glassBorder}`,
+    display: 'flex', justifyContent: 'space-around', padding: '8px 0 12px',
+    boxShadow: '0 -4px 24px rgba(0,0,0,0.4)',
+  },
+  bottomNavItem: (active) => ({
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+    background: 'none', border: 'none', cursor: 'pointer', padding: '4px 12px',
+    color: active ? T.accent : T.textMuted, fontSize: 10, fontFamily: T.mono,
+    fontWeight: active ? 600 : 400, transition: 'all 0.3s ease',
+    letterSpacing: 0.5, textTransform: 'uppercase',
+  }),
 }
 
 // ─── localStorage ────────────────────────────────────────────────────
@@ -1475,19 +1499,26 @@ if (typeof document !== 'undefined' && !document.getElementById('cliniq-keyframe
   style.id = 'cliniq-keyframes'
   style.textContent = `
     @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-    @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-    @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(77,163,255,0); } 50% { box-shadow: 0 0 20px 4px rgba(77,163,255,0.15); } }
+    @keyframes slideInRight { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes scaleIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+    @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(77,163,255,0); } 50% { box-shadow: 0 0 24px 6px rgba(77,163,255,0.15); } }
     @keyframes progressShimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
-    @keyframes breathe { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
-    .cliniq-fade-in { animation: fadeInUp 0.4s ease both; }
-    .cliniq-fade-in-delay-1 { animation: fadeInUp 0.4s ease 0.05s both; }
-    .cliniq-fade-in-delay-2 { animation: fadeInUp 0.4s ease 0.1s both; }
-    .cliniq-fade-in-delay-3 { animation: fadeInUp 0.4s ease 0.15s both; }
-    .cliniq-scale-in { animation: scaleIn 0.3s ease both; }
-    .cliniq-slide-in { animation: slideInRight 0.35s ease both; }
+    @keyframes breathe { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+    @keyframes skeletonShimmer { from { background-position: -100% 0; } to { background-position: 200% 0; } }
+    @keyframes bounceIn { 0% { transform: scale(0.8); opacity: 0; } 60% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); } }
+    @keyframes countUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .cliniq-fade-in { animation: fadeInUp 0.45s cubic-bezier(0.4,0,0.2,1) both; }
+    .cliniq-fade-in-delay-1 { animation: fadeInUp 0.45s cubic-bezier(0.4,0,0.2,1) 0.06s both; }
+    .cliniq-fade-in-delay-2 { animation: fadeInUp 0.45s cubic-bezier(0.4,0,0.2,1) 0.12s both; }
+    .cliniq-fade-in-delay-3 { animation: fadeInUp 0.45s cubic-bezier(0.4,0,0.2,1) 0.18s both; }
+    .cliniq-scale-in { animation: scaleIn 0.35s cubic-bezier(0.4,0,0.2,1) both; }
+    .cliniq-slide-in { animation: slideInRight 0.4s cubic-bezier(0.4,0,0.2,1) both; }
+    .cliniq-bounce-in { animation: bounceIn 0.5s cubic-bezier(0.4,0,0.2,1) both; }
+    .cliniq-skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 75%); background-size: 200% 100%; animation: skeletonShimmer 1.5s ease infinite; border-radius: 8px; }
+    button:active { transform: scale(0.97) !important; }
+    .cliniq-card-hover:hover { border-color: rgba(77,163,255,0.2) !important; box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 16px rgba(77,163,255,0.08) !important; transform: translateY(-1px); }
   `
   document.head.appendChild(style)
 }
@@ -1899,33 +1930,22 @@ export default function App() {
 
   return (
     <div style={{ ...s.container, fontFamily: bodyFont }}>
-      {/* Header */}
-      <header style={{ ...s.header, flexDirection: 'column', alignItems: 'stretch', gap: 0 }}>
-        {/* Row 1: Logo + compact actions */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-          <div style={s.logo} onMouseDown={handleLogoDown} onMouseUp={handleLogoUp} onTouchStart={handleLogoDown} onTouchEnd={handleLogoUp}>
-            <img src="/favicon.png" alt="ClinIQ" style={{ width: 32, height: 32, borderRadius: 8 }} />
-            <div>
-              <div style={{ ...s.logoText, fontSize: 17 }}>{t('cliniq')}</div>
-              <div style={{ ...s.logoSub, fontSize: 8 }}>{doctor?.name}</div>
+      {/* Header — Greeting style */}
+      <header style={{ ...s.header, flexDirection: 'row', padding: '12px 16px' }}>
+        <div style={s.logo} onMouseDown={handleLogoDown} onMouseUp={handleLogoUp} onTouchStart={handleLogoDown} onTouchEnd={handleLogoUp}>
+          <img src="/favicon.png" alt="ClinIQ" style={{ ...s.logoIcon, width: 36, height: 36 }} />
+          <div>
+            <div style={{ fontSize: 13, color: T.textMuted }}>
+              {new Date().getHours() < 12 ? 'Good Morning' : new Date().getHours() < 17 ? 'Good Afternoon' : 'Good Evening'}
             </div>
-          </div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <button onClick={toggleLang} style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${T.cardBorder}`, borderRadius: 7, padding: '4px 9px', cursor: 'pointer', fontSize: 11, color: T.textMuted, fontFamily: T.bangla }}>
-              {lang === 'en' ? 'বাং' : 'EN'}
-            </button>
-            {!isOnline && <span style={{ ...s.badge(T.amber, T.amberDim), fontSize: 8 }}>OFF</span>}
-            <button onClick={reset} style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${T.cardBorder}`, borderRadius: 7, padding: '4px 9px', cursor: 'pointer', fontSize: 18, color: T.textDim, lineHeight: 1 }}>+</button>
+            <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>{doctor?.name || 'Doctor'}</div>
           </div>
         </div>
-        {/* Row 2: Full-width nav pills */}
-        <div style={{ display: 'flex', gap: 4, width: '100%', marginTop: 10 }}>
-          <button style={{ ...s.toggle(view === 'consultation'), padding: '7px 0', fontSize: 12, borderRadius: 8, flex: 1, textAlign: 'center' }} onClick={() => { setView('consultation'); setSelectedEntry(null) }}>
-            {t('consultation')}
-          </button>
-          <button style={{ ...s.toggle(view === 'dashboard'), padding: '7px 0', fontSize: 12, borderRadius: 8, flex: 1, textAlign: 'center' }} onClick={() => { setView('dashboard'); setSelectedEntry(null) }}>
-            {t('dashboard')}
-          </button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {!isOnline && <span style={{ ...s.badge(T.amber, T.amberDim), fontSize: 8 }}><span style={{ width: 5, height: 5, borderRadius: '50%', background: T.amber, display: 'inline-block', marginRight: 4 }} />OFF</span>}
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: T.accentGrad, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: T.heading, fontSize: 16, fontWeight: 600, cursor: 'pointer' }} onClick={handleSignOut}>
+            {(doctor?.name || 'D').charAt(0).toUpperCase()}
+          </div>
         </div>
       </header>
 
@@ -2100,6 +2120,26 @@ export default function App() {
           )}
         </>
       )}
+
+      {/* Bottom Nav Bar */}
+      <nav style={s.bottomNav}>
+        <button style={s.bottomNavItem(view === 'consultation')} onClick={() => { setView('consultation'); setSelectedEntry(null) }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+          <span>Consult</span>
+        </button>
+        <button style={s.bottomNavItem(view === 'dashboard')} onClick={() => { setView('dashboard'); setSelectedEntry(null) }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span>Dashboard</span>
+        </button>
+        <button style={{ ...s.bottomNavItem(false), color: T.accent }} onClick={reset}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          <span>New</span>
+        </button>
+        <button style={s.bottomNavItem(false)} onClick={toggleLang}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          <span>{lang === 'en' ? 'বাং' : 'EN'}</span>
+        </button>
+      </nav>
     </div>
   )
 }
