@@ -951,27 +951,152 @@ function FollowUpScheduler({ logId, currentFollowUp, onSave }) {
 }
 
 // ─── Dashboard ───────────────────────────────────────────────────────
+// ─── Clinical Calculators ────────────────────────────────────────────
+function ClinicalCalculators() {
+  const [activeCalc, setActiveCalc] = useState(null)
+  const [vals, setVals] = useState({})
+  const set = (k, v) => setVals(p => ({ ...p, [k]: v }))
+
+  const bmi = vals.wt && vals.ht ? (vals.wt / ((vals.ht / 100) ** 2)).toFixed(1) : null
+  const bmiCat = bmi ? (bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese') : ''
+  const bmiColor = bmi ? (bmi < 18.5 ? T.amber : bmi < 25 ? T.green : bmi < 30 ? T.amber : T.red) : T.textMuted
+
+  // CKD-EPI GFR (simplified)
+  const gfr = vals.cr && vals.gfrAge && vals.gfrSex ? (() => {
+    const cr = parseFloat(vals.cr); const age = parseInt(vals.gfrAge)
+    const female = vals.gfrSex === 'F'
+    const k = female ? 0.7 : 0.9; const a = female ? -0.241 : -0.302
+    const f = female ? 1.012 : 1
+    return (142 * Math.pow(Math.min(cr / k, 1), a) * Math.pow(Math.max(cr / k, 1), -1.200) * Math.pow(0.9938, age) * f).toFixed(0)
+  })() : null
+  const gfrStage = gfr ? (gfr >= 90 ? 'G1 Normal' : gfr >= 60 ? 'G2 Mild' : gfr >= 30 ? 'G3 Moderate' : gfr >= 15 ? 'G4 Severe' : 'G5 Kidney Failure') : ''
+
+  // IV Fluid maintenance (Holliday-Segar)
+  const ivRate = vals.ivWt ? (() => {
+    const w = parseFloat(vals.ivWt)
+    if (w <= 10) return (w * 100).toFixed(0)
+    if (w <= 20) return (1000 + (w - 10) * 50).toFixed(0)
+    return (1500 + (w - 20) * 20).toFixed(0)
+  })() : null
+
+  const calcs = [
+    { id: 'bmi', label: 'BMI', icon: '&#9878;' },
+    { id: 'gfr', label: 'eGFR', icon: '&#9763;' },
+    { id: 'iv', label: 'IV Fluid', icon: '&#9737;' },
+  ]
+
+  return (
+    <div className="cliniq-fade-in" style={{ marginBottom: 20 }}>
+      <div style={{ ...s.label, fontSize: 12, marginBottom: 10 }}>Clinical Calculators</div>
+      <div style={{ display: 'flex', gap: 6, marginBottom: activeCalc ? 12 : 0, flexWrap: 'wrap' }}>
+        {calcs.map(c => (
+          <button key={c.id} onClick={() => { setActiveCalc(activeCalc === c.id ? null : c.id); setVals({}) }}
+            style={{ ...s.toggle(activeCalc === c.id), padding: '6px 14px', fontSize: 12 }}
+            dangerouslySetInnerHTML={{ __html: `${c.icon} ${c.label}` }} />
+        ))}
+      </div>
+      {activeCalc === 'bmi' && (
+        <div className="cliniq-scale-in" style={{ ...s.card, padding: '14px 16px' }}>
+          <div className="cliniq-grid-2" style={s.grid(2)}>
+            <div><div style={s.label}>Weight (kg)</div><input type="number" value={vals.wt || ''} onChange={e => set('wt', e.target.value)} placeholder="70" style={{ ...s.input, fontSize: 15 }} /></div>
+            <div><div style={s.label}>Height (cm)</div><input type="number" value={vals.ht || ''} onChange={e => set('ht', e.target.value)} placeholder="170" style={{ ...s.input, fontSize: 15 }} /></div>
+          </div>
+          {bmi && <div style={{ marginTop: 12, textAlign: 'center' }}>
+            <span style={{ fontFamily: T.heading, fontSize: 32, color: bmiColor }}>{bmi}</span>
+            <span style={{ fontSize: 12, color: bmiColor, marginLeft: 8, fontFamily: T.mono }}>{bmiCat}</span>
+          </div>}
+        </div>
+      )}
+      {activeCalc === 'gfr' && (
+        <div className="cliniq-scale-in" style={{ ...s.card, padding: '14px 16px' }}>
+          <div className="cliniq-grid-3" style={s.grid(3)}>
+            <div><div style={s.label}>Creatinine (mg/dL)</div><input type="number" step="0.1" value={vals.cr || ''} onChange={e => set('cr', e.target.value)} placeholder="1.2" style={{ ...s.input, fontSize: 15 }} /></div>
+            <div><div style={s.label}>Age</div><input type="number" value={vals.gfrAge || ''} onChange={e => set('gfrAge', e.target.value)} placeholder="45" style={{ ...s.input, fontSize: 15 }} /></div>
+            <div><div style={s.label}>Sex</div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button style={{ ...s.toggle(vals.gfrSex === 'M'), padding: '6px 12px', fontSize: 12, flex: 1 }} onClick={() => set('gfrSex', 'M')}>M</button>
+                <button style={{ ...s.toggle(vals.gfrSex === 'F'), padding: '6px 12px', fontSize: 12, flex: 1 }} onClick={() => set('gfrSex', 'F')}>F</button>
+              </div>
+            </div>
+          </div>
+          {gfr && <div style={{ marginTop: 12, textAlign: 'center' }}>
+            <span style={{ fontFamily: T.heading, fontSize: 32, color: gfr >= 60 ? T.green : gfr >= 30 ? T.amber : T.red }}>{gfr}</span>
+            <span style={{ fontSize: 11, color: T.textMuted, marginLeft: 8, fontFamily: T.mono }}>mL/min — {gfrStage}</span>
+          </div>}
+        </div>
+      )}
+      {activeCalc === 'iv' && (
+        <div className="cliniq-scale-in" style={{ ...s.card, padding: '14px 16px' }}>
+          <div><div style={s.label}>Body Weight (kg)</div><input type="number" value={vals.ivWt || ''} onChange={e => set('ivWt', e.target.value)} placeholder="70" style={{ ...s.input, fontSize: 15, maxWidth: 200 }} /></div>
+          {ivRate && <div style={{ marginTop: 12, textAlign: 'center' }}>
+            <span style={{ fontFamily: T.heading, fontSize: 32, color: T.accent }}>{ivRate}</span>
+            <span style={{ fontSize: 12, color: T.textMuted, marginLeft: 8, fontFamily: T.mono }}>mL/24hr</span>
+            <div style={{ fontSize: 11, color: T.textDim, marginTop: 4 }}>{(ivRate / 24).toFixed(0)} mL/hr &middot; {(ivRate / 24 / 60 * 20).toFixed(0)} drops/min (20 drop set)</div>
+          </div>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Dashboard ───────────────────────────────────────────────────────
 function Dashboard({ patientLog, setPatientLog, onLoadPatient, onViewDetail }) {
   const [search, setSearch] = useState('')
+  const [dashTab, setDashTab] = useState('overview')
+  const [memo, setMemo] = useState(() => localStorage.getItem('cliniq_memo') || '')
   const today = todayStr()
 
-  const todaysPatients = useMemo(() =>
-    patientLog.filter(e => e.date === today),
-    [patientLog, today]
-  )
+  const todaysPatients = useMemo(() => patientLog.filter(e => e.date === today), [patientLog, today])
+  const followUpsDue = useMemo(() => patientLog.filter(e => e.followUp?.scheduled && e.followUp.date === today && !e.followUp.completed), [patientLog, today])
 
-  const followUpsDue = useMemo(() =>
-    patientLog.filter(e => e.followUp?.scheduled && e.followUp.date === today && !e.followUp.completed),
-    [patientLog, today]
-  )
+  // Weekly activity (last 7 days)
+  const weeklyData = useMemo(() => {
+    const days = []
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i)
+      const ds = d.toISOString().slice(0, 10)
+      const dayName = d.toLocaleDateString('en', { weekday: 'short' })
+      const count = patientLog.filter(e => e.date === ds).length
+      days.push({ date: ds, day: dayName, count })
+    }
+    return days
+  }, [patientLog])
+  const maxWeekly = Math.max(...weeklyData.map(d => d.count), 1)
+  const weekTotal = weeklyData.reduce((a, d) => a + d.count, 0)
+  const avgPerDay = weekTotal > 0 ? (weekTotal / 7).toFixed(1) : '0'
+
+  // Top diagnoses
+  const topDx = useMemo(() => {
+    const counts = {}
+    patientLog.forEach(e => { const dx = e.dxResult?.primary_diagnosis; if (dx) counts[dx] = (counts[dx] || 0) + 1 })
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6)
+  }, [patientLog])
+  const maxDxCount = topDx.length > 0 ? topDx[0][1] : 1
+
+  // Top drugs prescribed
+  const topDrugs = useMemo(() => {
+    const counts = {}
+    patientLog.forEach(e => e.txResult?.medications?.forEach(m => { counts[m.drug] = (counts[m.drug] || 0) + 1 }))
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6)
+  }, [patientLog])
+  const maxDrugCount = topDrugs.length > 0 ? topDrugs[0][1] : 1
+
+  // 7-day follow-ups
+  const weekFollowUps = useMemo(() => {
+    const upcoming = []
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(); d.setDate(d.getDate() + i)
+      const ds = d.toISOString().slice(0, 10)
+      const entries = patientLog.filter(e => e.followUp?.scheduled && e.followUp.date === ds && !e.followUp.completed)
+      if (entries.length > 0) upcoming.push({ date: ds, dayName: d.toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' }), entries })
+    }
+    return upcoming
+  }, [patientLog])
 
   const filtered = useMemo(() => {
     if (!search.trim()) return patientLog
     const q = search.toLowerCase()
-    return patientLog.filter(e =>
-      (e.patient?.name || '').toLowerCase().includes(q) ||
-      (e.dxResult?.primary_diagnosis || '').toLowerCase().includes(q)
-    )
+    return patientLog.filter(e => (e.patient?.name || '').toLowerCase().includes(q) || (e.dxResult?.primary_diagnosis || '').toLowerCase().includes(q))
   }, [patientLog, search])
 
   const markFollowUpComplete = (id) => {
@@ -981,135 +1106,253 @@ function Dashboard({ patientLog, setPatientLog, onLoadPatient, onViewDetail }) {
     setPatientLog(updated)
   }
 
-  const totalPatients = patientLog.length
+  const saveMemo = (v) => { setMemo(v); localStorage.setItem('cliniq_memo', v) }
+
+  const barStyle = (pct, color) => ({
+    height: 6, borderRadius: 3, background: color, width: `${Math.max(pct, 4)}%`,
+    transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)',
+  })
 
   return (
     <div>
-      {/* Stats */}
-      <div className="cliniq-stats-row" style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
+      {/* Today's Summary Card */}
+      <div className="cliniq-fade-in" style={{ ...s.card, padding: '16px 18px', borderLeft: `3px solid ${T.accent}`, marginBottom: 16 }}>
+        <div style={{ fontSize: 14, color: T.textDim, lineHeight: 1.6 }}>
+          You saw <span style={{ color: T.accent, fontWeight: 700, fontFamily: T.heading, fontSize: 18 }}>{todaysPatients.length}</span> patient{todaysPatients.length !== 1 ? 's' : ''} today.
+          {topDx.length > 0 && <> Top Dx: <span style={{ color: T.text, fontWeight: 600 }}>{topDx[0][0]}</span> ({topDx[0][1]}).</>}
+          {followUpsDue.length > 0 && <> <span style={{ color: T.amber }}>{followUpsDue.length} follow-up{followUpsDue.length > 1 ? 's' : ''}</span> due.</>}
+          {weekFollowUps.length > 1 && <> {weekFollowUps.reduce((a, d) => a + d.entries.length, 0)} upcoming this week.</>}
+        </div>
+      </div>
+
+      {/* Stats Row */}
+      <div className="cliniq-stats-row cliniq-fade-in-delay-1" style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={s.statBox(T.accent)}>
-          <div style={{ ...s.label, marginBottom: 4 }}>Today</div>
-          <div style={{ fontSize: 32, fontWeight: 500, color: T.text, fontFamily: T.heading }}>{todaysPatients.length}</div>
-          <div style={{ fontSize: 12, color: T.textMuted }}>patients seen</div>
+          <div style={{ ...s.label, marginBottom: 2 }}>Today</div>
+          <div style={{ fontSize: 28, fontWeight: 500, color: T.text, fontFamily: T.heading }}>{todaysPatients.length}</div>
         </div>
         <div style={s.statBox(T.amber)}>
-          <div style={{ ...s.label, marginBottom: 4 }}>Follow-ups</div>
-          <div style={{ fontSize: 32, fontWeight: 500, color: T.amber, fontFamily: T.heading }}>{followUpsDue.length}</div>
-          <div style={{ fontSize: 12, color: T.textMuted }}>due today</div>
+          <div style={{ ...s.label, marginBottom: 2 }}>Follow-ups</div>
+          <div style={{ fontSize: 28, fontWeight: 500, color: T.amber, fontFamily: T.heading }}>{followUpsDue.length}</div>
         </div>
         <div style={s.statBox(T.green)}>
-          <div style={{ ...s.label, marginBottom: 4 }}>Total</div>
-          <div style={{ fontSize: 32, fontWeight: 500, color: T.text, fontFamily: T.heading }}>{totalPatients}</div>
-          <div style={{ fontSize: 12, color: T.textMuted }}>all records</div>
+          <div style={{ ...s.label, marginBottom: 2 }}>This Week</div>
+          <div style={{ fontSize: 28, fontWeight: 500, color: T.green, fontFamily: T.heading }}>{weekTotal}</div>
+        </div>
+        <div style={s.statBox(T.textDim)}>
+          <div style={{ ...s.label, marginBottom: 2 }}>Avg/Day</div>
+          <div style={{ fontSize: 28, fontWeight: 500, color: T.text, fontFamily: T.heading }}>{avgPerDay}</div>
         </div>
       </div>
 
-      {/* Follow-ups Due */}
-      {followUpsDue.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ ...s.label, color: T.amber, fontSize: 13, marginBottom: 12 }}>Follow-ups Due Today</div>
-          {followUpsDue.map(entry => (
-            <div key={entry.id} style={{ ...s.card, borderLeft: `3px solid ${T.amber}`, padding: '16px 20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-                <div>
-                  <div style={{ fontWeight: 500, fontSize: 17, color: T.text, fontFamily: T.heading }}>{entry.patient?.name || 'Unknown'}</div>
-                  <div style={{ fontSize: 13, color: T.textDim, marginTop: 2 }}>
-                    {entry.patient?.age} / {entry.patient?.sex} &middot; Dx: {entry.dxResult?.primary_diagnosis}
-                  </div>
-                  {entry.followUp?.notes && (
-                    <div style={{ fontSize: 13, color: T.amber, marginTop: 4 }}>Note: {entry.followUp.notes}</div>
-                  )}
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button style={s.btnSm(T.accent)} onClick={() => onLoadPatient(entry)}>Load Patient</button>
-                  <button style={s.btnSm(T.green)} onClick={() => markFollowUpComplete(entry.id)}>Mark Complete</button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Dashboard tabs */}
+      <div className="cliniq-tabs" style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+        {[['overview', 'Overview'], ['insights', 'Insights'], ['calendar', 'Follow-ups'], ['tools', 'Tools'], ['records', 'Records']].map(([id, label]) => (
+          <button key={id} style={s.tab(dashTab === id)} onClick={() => setDashTab(id)}>{label}</button>
+        ))}
+      </div>
 
-      {/* Today's Patients */}
-      {todaysPatients.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ ...s.label, fontSize: 13, marginBottom: 12 }}>Today's Patients</div>
-          {todaysPatients.map(entry => (
-            <div
-              key={entry.id}
-              onClick={() => onViewDetail(entry)}
-              style={{ ...s.card, padding: '14px 20px', cursor: 'pointer', transition: 'border-color 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = T.accent}
-              onMouseLeave={e => e.currentTarget.style.borderColor = T.cardBorder}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontFamily: T.mono, fontSize: 12, color: T.textMuted, minWidth: 60 }}>
-                    {formatTime(entry.timestamp)}
-                  </span>
-                  <div>
-                    <span style={{ fontWeight: 600, color: T.text }}>{entry.patient?.name || 'Unknown'}</span>
-                    <span style={{ color: T.textMuted, fontSize: 13, marginLeft: 8 }}>
-                      {entry.patient?.age}/{entry.patient?.sex}
-                    </span>
-                  </div>
+      {/* ── Overview Tab ── */}
+      {dashTab === 'overview' && (
+        <div className="cliniq-fade-in">
+          {/* Weekly Activity Graph */}
+          <div style={{ ...s.card, padding: '16px 18px' }}>
+            <div style={{ ...s.label, marginBottom: 12 }}>Weekly Activity</div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 100 }}>
+              {weeklyData.map((d, i) => (
+                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <span style={{ fontFamily: T.mono, fontSize: 10, color: d.date === today ? T.accent : T.textMuted }}>{d.count}</span>
+                  <div style={{
+                    width: '100%', maxWidth: 36, borderRadius: 6,
+                    height: `${Math.max((d.count / maxWeekly) * 70, 4)}px`,
+                    background: d.date === today ? T.accent : 'rgba(77,163,255,0.25)',
+                    transition: 'height 0.8s cubic-bezier(0.4,0,0.2,1)',
+                  }} />
+                  <span style={{ fontFamily: T.mono, fontSize: 9, color: d.date === today ? T.accent : T.textMuted }}>{d.day}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 13, color: T.textDim }}>{entry.dxResult?.primary_diagnosis}</span>
-                  {entry.dxResult?.confidence && <ConfidenceBadge level={entry.dxResult.confidence} />}
-                  {entry.followUp?.scheduled && !entry.followUp?.completed && (
-                    <span style={s.badge(T.amber, T.amberDim)}>F/U {entry.followUp.date}</span>
-                  )}
-                  {entry.followUp?.completed && (
-                    <span style={s.badge(T.green, T.greenDim)}>F/U done</span>
-                  )}
-                </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Patient History */}
-      <div>
-        <div style={{ ...s.label, fontSize: 13, marginBottom: 12 }}>Patient History</div>
-        <input
-          type="text" value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Search by name or diagnosis..."
-          style={{ ...s.input, maxWidth: 400, marginBottom: 16 }}
-          onFocus={e => e.target.style.borderColor = T.accent}
-          onBlur={e => e.target.style.borderColor = T.cardBorder}
-        />
-        {filtered.length === 0 ? (
-          <div style={{ ...s.card, textAlign: 'center', color: T.textMuted, padding: 40 }}>
-            {patientLog.length === 0 ? 'No patient records yet. Complete a consultation to see records here.' : 'No matching records.'}
           </div>
-        ) : (
-          filtered.slice(0, 50).map(entry => (
-            <div
-              key={entry.id}
-              onClick={() => onViewDetail(entry)}
-              style={{ ...s.card, padding: '12px 20px', cursor: 'pointer', transition: 'border-color 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = T.accent}
-              onMouseLeave={e => e.currentTarget.style.borderColor = T.cardBorder}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontFamily: T.mono, fontSize: 11, color: T.textMuted, minWidth: 80 }}>
-                    {entry.date}
-                  </span>
-                  <span style={{ fontWeight: 600, color: T.text, fontSize: 14 }}>{entry.patient?.name || 'Unknown'}</span>
-                  <span style={{ color: T.textMuted, fontSize: 12 }}>{entry.patient?.age}/{entry.patient?.sex}</span>
+
+          {/* Today's Patients */}
+          {todaysPatients.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ ...s.label, fontSize: 12, marginBottom: 10 }}>Today's Patients</div>
+              {todaysPatients.map((entry, i) => (
+                <div key={entry.id} className={`cliniq-fade-in-delay-${Math.min(i, 3)}`} onClick={() => onViewDetail(entry)}
+                  style={{ ...s.card, padding: '12px 16px', cursor: 'pointer', transition: 'all 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = T.accent}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = T.cardBorder}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontFamily: T.mono, fontSize: 11, color: T.textMuted }}>{formatTime(entry.timestamp)}</span>
+                      <span style={{ fontWeight: 600, color: T.text, fontSize: 14 }}>{entry.patient?.name || '—'}</span>
+                      <span style={{ color: T.textMuted, fontSize: 12 }}>{entry.patient?.age}/{entry.patient?.sex}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 12, color: T.textDim }}>{entry.dxResult?.primary_diagnosis}</span>
+                      {entry.dxResult?.confidence && <ConfidenceBadge level={entry.dxResult.confidence} />}
+                    </div>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 12, color: T.textDim }}>{entry.dxResult?.primary_diagnosis}</span>
-                  <span style={s.badge(T.textDim, T.cardBorder)}>{entry.treatmentType || 'dx only'}</span>
+              ))}
+            </div>
+          )}
+
+          {/* Quick Re-prescribe */}
+          {patientLog.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ ...s.label, fontSize: 12, marginBottom: 10 }}>Quick Re-prescribe</div>
+              <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
+                {patientLog.slice(0, 8).map(entry => (
+                  <div key={entry.id} onClick={() => onLoadPatient(entry)}
+                    style={{ ...glassCard, padding: '10px 14px', minWidth: 140, cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = T.accent}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = T.glassBorder}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: T.text, whiteSpace: 'nowrap' }}>{entry.patient?.name || '—'}</div>
+                    <div style={{ fontSize: 10, color: T.textMuted, marginTop: 2 }}>{entry.dxResult?.primary_diagnosis}</div>
+                    <div style={{ fontSize: 9, color: T.textMuted, fontFamily: T.mono, marginTop: 4 }}>{entry.date}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Insights Tab ── */}
+      {dashTab === 'insights' && (
+        <div className="cliniq-fade-in">
+          {/* Diagnosis Distribution */}
+          <div style={{ ...s.card, padding: '16px 18px' }}>
+            <div style={{ ...s.label, marginBottom: 14 }}>Top Diagnoses</div>
+            {topDx.length === 0 ? <div style={{ color: T.textMuted, fontSize: 13, textAlign: 'center', padding: 20 }}>No data yet</div> :
+              topDx.map(([dx, count], i) => (
+                <div key={i} style={{ marginBottom: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 13, color: T.text }}>{dx}</span>
+                    <span style={{ fontFamily: T.mono, fontSize: 11, color: T.textMuted }}>{count}</span>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 3, height: 6 }}>
+                    <div style={barStyle((count / maxDxCount) * 100, T.accent)} />
+                  </div>
+                </div>
+              ))}
+          </div>
+
+          {/* Drug Usage */}
+          <div style={{ ...s.card, padding: '16px 18px' }}>
+            <div style={{ ...s.label, marginBottom: 14 }}>Most Prescribed Drugs</div>
+            {topDrugs.length === 0 ? <div style={{ color: T.textMuted, fontSize: 13, textAlign: 'center', padding: 20 }}>No data yet</div> :
+              topDrugs.map(([drug, count], i) => (
+                <div key={i} style={{ marginBottom: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 13, color: T.text }}>{drug}</span>
+                    <span style={{ fontFamily: T.mono, fontSize: 11, color: T.textMuted }}>{count}x</span>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 3, height: 6 }}>
+                    <div style={barStyle((count / maxDrugCount) * 100, T.green)} />
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Follow-ups Calendar Tab ── */}
+      {dashTab === 'calendar' && (
+        <div className="cliniq-fade-in">
+          {followUpsDue.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ ...s.label, color: T.amber, fontSize: 12, marginBottom: 10 }}>Due Today</div>
+              {followUpsDue.map(entry => (
+                <div key={entry.id} style={{ ...s.card, borderLeft: `3px solid ${T.amber}`, padding: '14px 16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 15, color: T.text }}>{entry.patient?.name}</div>
+                      <div style={{ fontSize: 12, color: T.textDim, marginTop: 2 }}>Dx: {entry.dxResult?.primary_diagnosis}</div>
+                      {entry.followUp?.notes && <div style={{ fontSize: 12, color: T.amber, marginTop: 3 }}>{entry.followUp.notes}</div>}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button style={s.btnSm(T.accent)} onClick={() => onLoadPatient(entry)}>Load</button>
+                      <button style={s.btnSm(T.green)} onClick={() => markFollowUpComplete(entry.id)}>Done</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Upcoming 7 days */}
+          <div style={{ ...s.label, fontSize: 12, marginBottom: 10 }}>Upcoming 7 Days</div>
+          {weekFollowUps.length === 0 ? (
+            <div style={{ ...s.card, textAlign: 'center', color: T.textMuted, padding: 30, fontSize: 13 }}>No upcoming follow-ups</div>
+          ) : weekFollowUps.map(day => (
+            <div key={day.date} style={{ marginBottom: 12 }}>
+              <div style={{ fontFamily: T.mono, fontSize: 11, color: day.date === today ? T.amber : T.accent, marginBottom: 6 }}>
+                {day.dayName} {day.date === today ? '(Today)' : ''}
+              </div>
+              {day.entries.map(entry => (
+                <div key={entry.id} onClick={() => onViewDetail(entry)}
+                  style={{ ...s.card, padding: '10px 14px', cursor: 'pointer', marginBottom: 6, transition: 'border-color 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = T.accent}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = T.cardBorder}>
+                  <span style={{ fontWeight: 600, color: T.text, fontSize: 13 }}>{entry.patient?.name}</span>
+                  <span style={{ color: T.textMuted, fontSize: 11, marginLeft: 8 }}>{entry.dxResult?.primary_diagnosis}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Tools Tab ── */}
+      {dashTab === 'tools' && (
+        <div className="cliniq-fade-in">
+          <ClinicalCalculators />
+          {/* Notes Pad */}
+          <div style={{ ...s.label, fontSize: 12, marginBottom: 10 }}>Quick Notes</div>
+          <textarea
+            value={memo} onChange={e => saveMemo(e.target.value)}
+            placeholder="Personal scratchpad — persists across sessions..."
+            style={{ ...s.textarea, minHeight: 120, fontSize: 14 }}
+          />
+        </div>
+      )}
+
+      {/* ── Records Tab ── */}
+      {dashTab === 'records' && (
+        <div className="cliniq-fade-in">
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name or diagnosis..."
+            style={{ ...s.input, marginBottom: 14 }}
+            onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.background = 'rgba(255,255,255,0.07)' }}
+            onBlur={e => { e.target.style.borderColor = T.cardBorder; e.target.style.background = 'rgba(255,255,255,0.04)' }}
+          />
+          {filtered.length === 0 ? (
+            <div style={{ ...s.card, textAlign: 'center', color: T.textMuted, padding: 30, fontSize: 13 }}>
+              {patientLog.length === 0 ? 'No records yet.' : 'No matches.'}
+            </div>
+          ) : filtered.slice(0, 50).map((entry, i) => (
+            <div key={entry.id} className={i < 4 ? `cliniq-fade-in-delay-${i}` : ''}
+              onClick={() => onViewDetail(entry)}
+              style={{ ...s.card, padding: '10px 16px', cursor: 'pointer', transition: 'border-color 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = T.accent}
+              onMouseLeave={e => e.currentTarget.style.borderColor = T.cardBorder}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontFamily: T.mono, fontSize: 10, color: T.textMuted }}>{entry.date}</span>
+                  <span style={{ fontWeight: 600, color: T.text, fontSize: 13 }}>{entry.patient?.name || '—'}</span>
+                  <span style={{ color: T.textMuted, fontSize: 11 }}>{entry.patient?.age}/{entry.patient?.sex}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 11, color: T.textDim }}>{entry.dxResult?.primary_diagnosis}</span>
+                  <span style={s.badge(T.textDim, T.cardBorder)}>{entry.treatmentType || 'dx'}</span>
                 </div>
               </div>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
