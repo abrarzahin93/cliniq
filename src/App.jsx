@@ -671,108 +671,122 @@ function TreatmentTab({ tx }) {
   )
 }
 
+function RxMedLine({ med, index }) {
+  const [showDropdown, setShowDropdown] = useState(false)
+  const brands = findBDbrands(med.drug)
+  const [selectedBrand, setSelectedBrand] = useState(brands[0] || null)
+
+  // Derive dosage form prefix from route
+  const formPrefix = (med.route || '').toLowerCase().includes('iv') || (med.route || '').toLowerCase().includes('inj')
+    ? 'Inj.' : (med.route || '').toLowerCase().includes('syrup') || (med.route || '').toLowerCase().includes('susp')
+    ? 'Syr.' : (selectedBrand?.form || '').toLowerCase().includes('capsule')
+    ? 'Cap.' : (selectedBrand?.form || '').toLowerCase().includes('inhaler')
+    ? 'Inh.' : (selectedBrand?.form || '').toLowerCase().includes('suppository')
+    ? 'Supp.' : (selectedBrand?.form || '').toLowerCase().includes('syrup')
+    ? 'Syr.' : 'Tab.'
+
+  const brandName = selectedBrand ? selectedBrand.name : med.drug
+  const company = selectedBrand ? selectedBrand.company : ''
+
+  return (
+    <div style={{ padding: '14px 0', borderBottom: `1px solid ${T.cardBorder}` }}>
+      {/* Line 1: Tab. BrandName Dose (Company) [dropdown] */}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 11, color: T.textMuted, fontFamily: T.mono, minWidth: 32 }}>{formPrefix}</span>
+        <span style={{ fontSize: 16, fontWeight: 700, color: T.text }}>{brandName}</span>
+        <span style={{ fontSize: 14, color: T.textDim }}>{med.dose}</span>
+        {company && <span style={{ fontSize: 11, color: T.accent, fontFamily: T.mono }}>({company})</span>}
+        {brands.length > 1 && (
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <button
+              className="no-print"
+              onClick={() => setShowDropdown(!showDropdown)}
+              style={{ background: 'none', border: `1px solid ${T.cardBorder}`, borderRadius: 6, padding: '2px 8px', cursor: 'pointer', fontSize: 10, color: T.textMuted, fontFamily: T.mono }}
+            >
+              {showDropdown ? 'close' : 'others'} &#9662;
+            </button>
+            {showDropdown && (
+              <div className="no-print" style={{ position: 'absolute', top: '100%', left: 0, zIndex: 20, marginTop: 4, background: T.surface1, border: `1px solid ${T.glassBorder}`, borderRadius: 10, padding: 6, minWidth: 200, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+                {brands.map((b, j) => (
+                  <div
+                    key={j}
+                    onClick={() => { setSelectedBrand(b); setShowDropdown(false) }}
+                    style={{ padding: '8px 12px', borderRadius: 8, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: selectedBrand?.name === b.name ? T.accentDim : 'transparent', transition: 'background 0.15s' }}
+                    onMouseEnter={e => { if (selectedBrand?.name !== b.name) e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+                    onMouseLeave={e => { if (selectedBrand?.name !== b.name) e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{b.name}</span>
+                    <span style={{ fontSize: 10, color: T.textMuted, fontFamily: T.mono }}>{b.company}</span>
+                  </div>
+                ))}
+                <a href={medexSearchUrl(med.drug)} target="_blank" rel="noopener noreferrer" style={{ display: 'block', padding: '8px 12px', fontSize: 11, color: T.accent, textDecoration: 'none', fontFamily: T.mono, borderTop: `1px solid ${T.cardBorder}`, marginTop: 4 }}>
+                  More on MedEx &rarr;
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Line 2: Generic name in small italic */}
+      <div style={{ fontSize: 11, color: T.textMuted, fontStyle: 'italic', marginTop: 2, paddingLeft: 38 }}>
+        {med.drug}
+      </div>
+
+      {/* Line 3: Frequency ————— Duration */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, paddingLeft: 38 }}>
+        <span style={{ fontSize: 14, color: T.text, fontWeight: 500 }}>{med.frequency}</span>
+        <span style={{ flex: 1, borderBottom: `1px dashed ${T.cardBorder}`, minWidth: 40 }} />
+        <span style={{ fontSize: 14, color: T.text }}>{med.duration}</span>
+      </div>
+
+      {/* Line 4: Doctor-only info (no-print) — reason + route */}
+      <div className="no-print" style={{ marginTop: 6, paddingLeft: 38, fontSize: 11, color: T.textMuted, fontStyle: 'italic', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        {med.notes && <span>({med.notes})</span>}
+        {med.route && <span style={{ color: T.textDim }}>Route: {med.route}</span>}
+      </div>
+    </div>
+  )
+}
+
 function PrescriptionTab({ patient, dx, tx }) {
   return (
     <div>
-      {/* Screen view — dark glass aesthetic */}
       <div id="rx-print" style={s.rxPad}>
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ fontFamily: T.heading, fontSize: 28, color: T.accent, letterSpacing: -0.5 }}>Rx</div>
-          <div style={{ fontFamily: T.mono, fontSize: 9, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 2, marginTop: 4 }}>ClinIQ Prescription</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${T.cardBorder}` }}>
+          <div>
+            <div style={{ fontFamily: T.heading, fontSize: 26, color: T.accent }}>Rx</div>
+            <div style={{ fontFamily: T.mono, fontSize: 9, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 2 }}>ClinIQ Prescription</div>
+          </div>
+          <div style={{ textAlign: 'right', fontSize: 13, color: T.textDim }}>
+            <div>{new Date().toLocaleDateString()}</div>
+          </div>
         </div>
 
-        {/* Patient info */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20, padding: '14px 18px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: `1px solid ${T.cardBorder}` }}>
-          <div>
-            <div style={{ fontFamily: T.mono, fontSize: 9, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>Patient</div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: T.text, marginTop: 2 }}>{patient.name || '—'}</div>
-          </div>
-          <div>
-            <div style={{ fontFamily: T.mono, fontSize: 9, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>Age / Sex</div>
-            <div style={{ fontSize: 15, color: T.text, marginTop: 2 }}>{patient.age || '—'} / {patient.sex || '—'}</div>
-          </div>
-          <div>
-            <div style={{ fontFamily: T.mono, fontSize: 9, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>Weight</div>
-            <div style={{ fontSize: 14, color: T.text, marginTop: 2 }}>{patient.weight ? `${patient.weight} kg` : '—'}</div>
-          </div>
-          <div>
-            <div style={{ fontFamily: T.mono, fontSize: 9, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>Date</div>
-            <div style={{ fontSize: 14, color: T.text, marginTop: 2 }}>{new Date().toLocaleDateString()}</div>
-          </div>
+        {/* Patient info — compact one-liner */}
+        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginBottom: 12, fontSize: 13 }}>
+          <span><span style={{ color: T.textMuted }}>Name:</span> <span style={{ color: T.text, fontWeight: 600 }}>{patient.name || '—'}</span></span>
+          <span><span style={{ color: T.textMuted }}>Age:</span> <span style={{ color: T.text }}>{patient.age || '—'}</span></span>
+          <span><span style={{ color: T.textMuted }}>Sex:</span> <span style={{ color: T.text }}>{patient.sex || '—'}</span></span>
+          {patient.weight && <span><span style={{ color: T.textMuted }}>Wt:</span> <span style={{ color: T.text }}>{patient.weight}kg</span></span>}
         </div>
 
         {/* Diagnosis */}
-        <div style={{ marginBottom: 24, padding: '10px 16px', background: T.accentDim, borderRadius: 10, border: `1px solid rgba(216,254,145,0.15)` }}>
-          <span style={{ fontFamily: T.mono, fontSize: 9, color: T.accent, textTransform: 'uppercase', letterSpacing: 1 }}>Diagnosis </span>
-          <span style={{ fontSize: 14, color: T.text, fontWeight: 500 }}>{dx?.primary_diagnosis || '—'}</span>
+        <div style={{ marginBottom: 20, fontSize: 13 }}>
+          <span style={{ color: T.textMuted }}>Dx:</span>{' '}
+          <span style={{ color: T.accent, fontWeight: 500 }}>{dx?.primary_diagnosis || '—'}</span>
         </div>
 
-        {/* Medication cards */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
-          {tx?.medications?.map((med, i) => {
-            const brands = findBDbrands(med.drug)
-            const topBrand = brands[0]
-            return (
-              <div key={i} style={{ padding: '16px 18px', background: 'rgba(255,255,255,0.03)', borderRadius: 14, border: `1px solid ${T.cardBorder}`, borderLeft: `3px solid ${T.accent}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                  <div style={{ flex: 1 }}>
-                    {/* Top brand name — big */}
-                    <div style={{ fontSize: 17, fontWeight: 700, color: T.text }}>
-                      {topBrand ? topBrand.name : med.drug}
-                      {topBrand && <span style={{ fontSize: 11, fontWeight: 500, color: T.accent, marginLeft: 8, fontFamily: T.mono }}>{topBrand.company}</span>}
-                    </div>
-                    {/* Generic name — small */}
-                    <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2, fontStyle: 'italic' }}>
-                      {med.drug} {med.dose}
-                    </div>
-                  </div>
-                  <span style={{ fontFamily: T.mono, fontSize: 11, color: T.textMuted, minWidth: 20, textAlign: 'right' }}>#{i + 1}</span>
-                </div>
-
-                {/* Dosage details */}
-                <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
-                  {[
-                    ['Route', med.route],
-                    ['Freq', med.frequency],
-                    ['Duration', med.duration],
-                  ].map(([label, val]) => val && (
-                    <div key={label}>
-                      <div style={{ fontFamily: T.mono, fontSize: 8, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
-                      <div style={{ fontSize: 13, color: T.textDim, marginTop: 1 }}>{val}</div>
-                    </div>
-                  ))}
-                </div>
-                {med.notes && <div style={{ fontSize: 12, color: T.textMuted, marginTop: 8, fontStyle: 'italic' }}>{med.notes}</div>}
-
-                {/* Other brand options */}
-                {brands.length > 1 && (
-                  <div className="no-print" style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.cardBorder}` }}>
-                    <span style={{ fontSize: 9, color: T.textMuted, fontFamily: T.mono, alignSelf: 'center', marginRight: 4 }}>ALSO:</span>
-                    {brands.slice(1, 5).map((b, j) => (
-                      <span key={j} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.cardBorder}`, color: T.textDim, fontFamily: T.mono }}>
-                        {b.name} <span style={{ color: T.textMuted, fontSize: 9 }}>({b.company})</span>
-                      </span>
-                    ))}
-                    <a href={medexSearchUrl(med.drug)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 9, color: T.accent, textDecoration: 'none', alignSelf: 'center', fontFamily: T.mono }}>
-                      More &rarr;
-                    </a>
-                  </div>
-                )}
-                {brands.length === 0 && (
-                  <div className="no-print" style={{ marginTop: 8 }}>
-                    <a href={medexSearchUrl(med.drug)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: T.accent, textDecoration: 'none', fontFamily: T.mono }}>
-                      Find trade names &rarr;
-                    </a>
-                  </div>
-                )}
-              </div>
-            )
-          })}
+        {/* Medications — proper prescription format */}
+        <div style={{ marginBottom: 24 }}>
+          {tx?.medications?.map((med, i) => (
+            <RxMedLine key={i} med={med} index={i} />
+          ))}
         </div>
 
         {/* Signature */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 32 }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ borderTop: `1px solid ${T.glassBorder}`, width: 180, marginBottom: 6 }} />
             <div style={{ fontFamily: T.mono, fontSize: 9, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>Clinician Signature</div>
