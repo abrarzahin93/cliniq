@@ -21,182 +21,177 @@ async function getSymptomChecker() {
   return _symptomChecker
 }
 
-// ─── Theme — Premium Navy Medical ────────────────────────────────────
+// ─── Theme — Ultra-clean Dark Medical ────────────────────────────────
 const T = {
-  bg: '#060a14',
-  card: 'rgba(13,19,34,0.85)',
-  cardHover: 'rgba(19,27,46,0.95)',
-  cardBorder: 'rgba(77,163,255,0.08)',
-  glass: 'rgba(13,19,34,0.75)',
-  glassBorder: 'rgba(77,163,255,0.12)',
+  bg: '#030508',
+  card: 'rgba(12,16,28,0.65)',
+  cardHover: 'rgba(16,22,38,0.80)',
+  cardBorder: 'rgba(255,255,255,0.06)',
+  glass: 'rgba(10,14,24,0.55)',
+  glassBorder: 'rgba(255,255,255,0.08)',
   accent: '#4da3ff',
   accentLight: '#7dbdff',
-  accentDim: 'rgba(77,163,255,0.12)',
+  accentDim: 'rgba(77,163,255,0.10)',
   accentGrad: 'linear-gradient(135deg, #4da3ff, #7c5cfc)',
   accentDark: '#0a1628',
-  green: '#34d399', greenDim: 'rgba(52,211,153,0.10)',
-  amber: '#fbbf24', amberDim: 'rgba(251,191,36,0.10)',
-  red: '#f87171', redDim: 'rgba(248,113,113,0.10)',
-  text: '#edf2f7',
-  textDim: 'rgba(255,255,255,0.60)',
-  textMuted: 'rgba(255,255,255,0.32)',
-  surface1: '#0d1322',
-  surface2: '#131b2e',
-  shadow: '0 4px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(77,163,255,0.06)',
-  glowBlue: '0 0 20px rgba(77,163,255,0.08)',
+  green: '#34d399', greenDim: 'rgba(52,211,153,0.08)',
+  amber: '#fbbf24', amberDim: 'rgba(251,191,36,0.08)',
+  red: '#f87171', redDim: 'rgba(248,113,113,0.08)',
+  text: '#f0f2f5',
+  textDim: 'rgba(255,255,255,0.55)',
+  textMuted: 'rgba(255,255,255,0.28)',
+  surface1: '#0a0e1a',
+  surface2: '#0f1524',
+  shadow: '0 8px 32px rgba(0,0,0,0.5)',
+  glowBlue: '0 0 30px rgba(77,163,255,0.06)',
   heading: "'Inter', -apple-system, sans-serif",
   body: "'Inter', -apple-system, sans-serif",
   bangla: "'Noto Sans Bengali', 'Inter', sans-serif",
   mono: "'IBM Plex Mono', monospace",
 }
 
-const blur = '24px'
+const blur = '40px'
 const glassCard = {
   background: T.glass,
   backdropFilter: `blur(${blur})`,
   WebkitBackdropFilter: `blur(${blur})`,
   border: `1px solid ${T.glassBorder}`,
-  borderRadius: 18,
+  borderRadius: 24,
   boxShadow: T.shadow,
 }
 
 // ─── Styles ──────────────────────────────────────────────────────────
 const s = {
-  container: { maxWidth: 920, margin: '0 auto', padding: '16px 12px 90px', fontFamily: T.body },
+  container: { maxWidth: 480, margin: '0 auto', padding: '12px 16px 100px', fontFamily: T.body, position: 'relative', zIndex: 1 },
   header: {
-    ...glassCard,
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '10px 16px', marginBottom: 22,
-    flexWrap: 'wrap', gap: 8,
-    position: 'sticky', top: 8, zIndex: 50,
+    padding: '16px 0', marginBottom: 8,
+    position: 'sticky', top: 0, zIndex: 50,
+    background: 'linear-gradient(180deg, #030508 60%, transparent)',
+    paddingTop: 12,
   },
   logo: { display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' },
   logoIcon: {
-    width: 36, height: 36, borderRadius: 10,
+    width: 40, height: 40, borderRadius: 12,
     overflow: 'hidden', flexShrink: 0,
   },
-  logoText: { fontFamily: T.heading, fontWeight: 700, fontSize: 20, color: T.text, letterSpacing: -0.3 },
-  logoSub: { fontFamily: T.mono, fontSize: 9, color: T.accent, marginTop: 1, letterSpacing: 0.5, textTransform: 'uppercase' },
+  logoText: { fontFamily: T.heading, fontWeight: 700, fontSize: 20, color: T.text, letterSpacing: -0.5 },
+  logoSub: { fontFamily: T.body, fontSize: 12, color: T.textMuted, marginTop: 0, fontWeight: 400 },
   btn: (bg, color = '#fff') => ({
-    padding: '11px 24px', border: 'none', borderRadius: 12, cursor: 'pointer',
-    fontWeight: 600, fontSize: 14, color, background: bg,
+    padding: '14px 28px', border: 'none', borderRadius: 16, cursor: 'pointer',
+    fontWeight: 600, fontSize: 15, color, background: bg,
     transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)', fontFamily: T.body,
-    boxShadow: bg === T.accent ? '0 4px 16px rgba(77,163,255,0.3)' : 'none',
+    boxShadow: bg === T.accent ? '0 8px 24px rgba(77,163,255,0.25)' : 'none',
   }),
   btnSm: (bg, color = '#fff') => ({
-    padding: '7px 16px', border: 'none', borderRadius: 10, cursor: 'pointer',
-    fontWeight: 600, fontSize: 12, color, background: bg,
+    padding: '8px 18px', border: 'none', borderRadius: 12, cursor: 'pointer',
+    fontWeight: 600, fontSize: 13, color, background: bg,
     transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)', fontFamily: T.body,
   }),
   btnOutline: {
-    padding: '10px 22px', border: `1px solid ${T.glassBorder}`, borderRadius: 12,
+    padding: '12px 24px', border: `1px solid ${T.glassBorder}`, borderRadius: 16,
     cursor: 'pointer', fontWeight: 500, fontSize: 14, color: T.textDim,
-    background: 'rgba(255,255,255,0.04)', transition: 'all 0.3s ease', fontFamily: T.body,
-    backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+    background: 'rgba(255,255,255,0.03)', transition: 'all 0.3s ease', fontFamily: T.body,
   },
   card: {
-    ...glassCard, padding: '20px 18px', marginBottom: 16,
+    ...glassCard, padding: '24px 20px', marginBottom: 20,
     transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
   },
   label: {
-    fontFamily: T.mono, fontSize: 10, fontWeight: 600, color: T.textMuted,
-    textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 8, display: 'block',
+    fontFamily: T.body, fontSize: 11, fontWeight: 500, color: T.textMuted,
+    textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 8, display: 'block',
   },
   input: {
-    width: '100%', padding: '12px 16px',
-    background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(77,163,255,0.08)`,
-    borderRadius: 12, color: T.text, fontSize: 15, outline: 'none', fontFamily: T.body,
+    width: '100%', padding: '14px 18px',
+    background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.06)`,
+    borderRadius: 16, color: T.text, fontSize: 16, outline: 'none', fontFamily: T.body,
     transition: 'all 0.3s ease',
-    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.2)',
   },
   textarea: {
-    width: '100%', padding: '12px 16px',
-    background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(77,163,255,0.08)`,
-    borderRadius: 12, color: T.text, fontSize: 15, outline: 'none', fontFamily: T.body,
-    minHeight: 90, resize: 'vertical', transition: 'all 0.3s ease',
-    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.2)',
+    width: '100%', padding: '14px 18px',
+    background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.06)`,
+    borderRadius: 16, color: T.text, fontSize: 16, outline: 'none', fontFamily: T.body,
+    minHeight: 100, resize: 'vertical', transition: 'all 0.3s ease',
   },
   grid: (cols, gap = 14) => ({
     display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap,
   }),
-  progressBar: { display: 'flex', gap: 5, marginBottom: 20 },
+  progressBar: { display: 'flex', gap: 6, marginBottom: 28, padding: '0 4px' },
   progressStep: (active, done) => ({
-    flex: 1, height: 4, borderRadius: 4,
+    flex: 1, height: 3, borderRadius: 3,
     transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
-    backgroundColor: done ? T.accent : active ? 'transparent' : 'rgba(255,255,255,0.05)',
+    backgroundColor: done ? T.accent : active ? 'transparent' : 'rgba(255,255,255,0.06)',
     backgroundImage: active ? `linear-gradient(90deg, ${T.accent}, rgba(124,92,252,0.4), ${T.accent})` : 'none',
     backgroundSize: '200% 100%',
     animation: active ? 'progressShimmer 2s ease infinite' : 'none',
-    boxShadow: done ? '0 0 8px rgba(77,163,255,0.3)' : 'none',
+    boxShadow: done ? '0 0 12px rgba(77,163,255,0.2)' : 'none',
   }),
   stepTitle: {
-    fontFamily: T.heading, fontWeight: 700, fontSize: 20, color: T.text, marginBottom: 20,
-    letterSpacing: -0.3,
+    fontFamily: T.heading, fontWeight: 600, fontSize: 22, color: T.text, marginBottom: 24,
+    letterSpacing: -0.5,
   },
   badge: (color, bgColor) => ({
-    display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 12px', borderRadius: 999, fontSize: 10,
-    fontWeight: 600, fontFamily: T.mono, color, background: bgColor, textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 14px', borderRadius: 999, fontSize: 11,
+    fontWeight: 600, fontFamily: T.body, color, background: bgColor,
+    letterSpacing: 0.3,
   }),
   tab: (active) => ({
-    padding: '10px 18px', border: 'none', borderRadius: 12, cursor: 'pointer',
+    padding: '11px 20px', border: 'none', borderRadius: 14, cursor: 'pointer',
     fontWeight: 600, fontSize: 13, fontFamily: T.body,
     color: active ? '#fff' : T.textMuted,
-    background: active ? T.accentGrad : 'transparent',
+    background: active ? T.accentGrad : 'rgba(255,255,255,0.04)',
     transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
-    boxShadow: active ? '0 4px 16px rgba(77,163,255,0.25)' : 'none',
-    transform: active ? 'scale(1.02)' : 'scale(1)',
+    boxShadow: active ? '0 4px 20px rgba(77,163,255,0.2)' : 'none',
   }),
   toggle: (active) => ({
-    padding: '8px 16px', border: `1.5px solid ${active ? T.accent : 'rgba(77,163,255,0.1)'}`,
-    borderRadius: 10, cursor: 'pointer', fontWeight: 500, fontSize: 13,
+    padding: '10px 18px', border: `1px solid ${active ? 'transparent' : 'rgba(255,255,255,0.06)'}`,
+    borderRadius: 14, cursor: 'pointer', fontWeight: 500, fontSize: 14,
     color: active ? '#fff' : T.textDim,
     background: active ? T.accentGrad : 'rgba(255,255,255,0.03)',
     transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)', fontFamily: T.body,
-    boxShadow: active ? '0 2px 12px rgba(77,163,255,0.2)' : 'none',
+    boxShadow: active ? '0 4px 16px rgba(77,163,255,0.15)' : 'none',
   }),
   disclaimer: {
     ...glassCard,
-    background: 'rgba(251,191,36,0.05)',
-    border: '1px solid rgba(251,191,36,0.12)',
-    padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 10,
+    background: 'rgba(251,191,36,0.04)',
+    border: '1px solid rgba(251,191,36,0.08)',
+    padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'flex-start', gap: 12,
   },
   spinner: {
-    width: 32, height: 32, border: '3px solid rgba(77,163,255,0.1)',
-    borderTop: `3px solid ${T.accent}`,
-    borderRadius: '50%', animation: 'spin 0.7s linear infinite, pulseGlow 2s ease infinite',
+    width: 36, height: 36, border: '2.5px solid rgba(255,255,255,0.06)',
+    borderTop: `2.5px solid ${T.accent}`,
+    borderRadius: '50%', animation: 'spin 0.8s linear infinite, pulseGlow 2s ease infinite',
   },
   rxPad: {
-    ...glassCard, padding: '28px 24px', maxWidth: 640, margin: '0 auto',
+    ...glassCard, padding: '28px 22px', margin: '0 auto',
   },
   rxPadPrint: {
     background: '#fff', color: '#111', padding: 40, borderRadius: 8,
-    fontFamily: "'Inter', sans-serif", maxWidth: 640, margin: '0 auto',
+    fontFamily: "'Inter', sans-serif", margin: '0 auto',
   },
   statBox: (color) => ({
-    ...glassCard, padding: '16px 18px', flex: 1, minWidth: 130,
+    ...glassCard, padding: '18px 16px', flex: 1, minWidth: 100,
     borderLeft: `3px solid ${color}`,
-    background: `linear-gradient(135deg, rgba(13,19,34,0.9), rgba(13,19,34,0.7))`,
   }),
   medexLink: {
-    color: T.accent, fontSize: 11, fontFamily: T.mono, textDecoration: 'none',
-    padding: '3px 10px', border: `1px solid rgba(77,163,255,0.15)`, borderRadius: 8,
+    color: T.accent, fontSize: 12, fontFamily: T.body, textDecoration: 'none',
+    padding: '4px 12px', border: `1px solid rgba(255,255,255,0.06)`, borderRadius: 12,
     display: 'inline-block', transition: 'all 0.3s',
-    background: 'rgba(77,163,255,0.06)',
+    background: 'rgba(77,163,255,0.05)',
   },
   bottomNav: {
     position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
-    background: 'rgba(6,10,20,0.92)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-    borderTop: `1px solid ${T.glassBorder}`,
-    display: 'flex', justifyContent: 'space-around', padding: '8px 0 12px',
-    boxShadow: '0 -4px 24px rgba(0,0,0,0.4)',
+    background: 'rgba(3,5,8,0.85)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)',
+    borderTop: '1px solid rgba(255,255,255,0.04)',
+    display: 'flex', justifyContent: 'space-around', padding: '6px 0',
+    paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
   },
   bottomNavItem: (active) => ({
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-    background: 'none', border: 'none', cursor: 'pointer', padding: '4px 12px',
-    color: active ? T.accent : T.textMuted, fontSize: 10, fontFamily: T.mono,
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+    background: 'none', border: 'none', cursor: 'pointer', padding: '6px 16px',
+    color: active ? T.accent : T.textMuted, fontSize: 10, fontFamily: T.body,
     fontWeight: active ? 600 : 400, transition: 'all 0.3s ease',
-    letterSpacing: 0.5, textTransform: 'uppercase',
+    letterSpacing: 0.3,
   }),
 }
 
@@ -1520,9 +1515,10 @@ if (typeof document !== 'undefined' && !document.getElementById('cliniq-keyframe
     button:active { transform: scale(0.97) !important; }
     .cliniq-card-hover:hover { border-color: rgba(77,163,255,0.2) !important; box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 16px rgba(77,163,255,0.08) !important; transform: translateY(-1px); }
     input:focus, textarea:focus { border-color: #4da3ff !important; background: rgba(77,163,255,0.04) !important; box-shadow: 0 0 0 3px rgba(77,163,255,0.1), inset 0 1px 2px rgba(0,0,0,0.2) !important; }
-    .cliniq-orb { position: fixed; border-radius: 50%; filter: blur(100px); opacity: 0.12; pointer-events: none; z-index: 0; }
-    .cliniq-orb-1 { width: 400px; height: 400px; background: #4da3ff; top: -100px; right: -100px; }
-    .cliniq-orb-2 { width: 300px; height: 300px; background: #7c5cfc; bottom: 100px; left: -80px; }
+    .cliniq-orb { position: fixed; border-radius: 50%; filter: blur(140px); pointer-events: none; z-index: 0; }
+    .cliniq-orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, #3b1d8e, transparent); top: -150px; right: -150px; opacity: 0.14; }
+    .cliniq-orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, #7a1d5a, transparent); bottom: 200px; left: -120px; opacity: 0.08; }
+    .cliniq-orb-3 { width: 350px; height: 350px; background: radial-gradient(circle, #1a4a8a, transparent); top: 40%; right: -100px; opacity: 0.06; }
   `
   document.head.appendChild(style)
 }
@@ -1937,21 +1933,24 @@ export default function App() {
       {/* Ambient gradient orbs for depth */}
       <div className="cliniq-orb cliniq-orb-1" />
       <div className="cliniq-orb cliniq-orb-2" />
+      <div className="cliniq-orb cliniq-orb-3" />
 
-      {/* Header — Greeting style */}
-      <header style={{ ...s.header, flexDirection: 'row', padding: '12px 16px' }}>
+      {/* Header — Clean greeting */}
+      <header style={s.header}>
         <div style={s.logo} onMouseDown={handleLogoDown} onMouseUp={handleLogoUp} onTouchStart={handleLogoDown} onTouchEnd={handleLogoUp}>
-          <img src="/favicon.png" alt="ClinIQ" style={{ ...s.logoIcon, width: 36, height: 36 }} />
+          <img src="/favicon.png" alt="ClinIQ" style={s.logoIcon} />
           <div>
-            <div style={{ fontSize: 13, color: T.textMuted }}>
+            <div style={{ fontSize: 14, color: T.textMuted, fontWeight: 400 }}>
+              Hi, {(doctor?.name || 'Doctor').replace(/^Dr\.?\s*/i, '').split(' ')[0]}!
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: T.text, letterSpacing: -0.3 }}>
               {new Date().getHours() < 12 ? 'Good Morning' : new Date().getHours() < 17 ? 'Good Afternoon' : 'Good Evening'}
             </div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: T.text }}>{doctor?.name || 'Doctor'}</div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {!isOnline && <span style={{ ...s.badge(T.amber, T.amberDim), fontSize: 8 }}><span style={{ width: 5, height: 5, borderRadius: '50%', background: T.amber, display: 'inline-block', marginRight: 4 }} />OFF</span>}
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: T.accentGrad, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: T.heading, fontSize: 16, fontWeight: 600, cursor: 'pointer' }} onClick={handleSignOut}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {!isOnline && <div style={{ width: 8, height: 8, borderRadius: '50%', background: T.amber }} />}
+          <div style={{ width: 40, height: 40, borderRadius: 14, background: T.accentGrad, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 17, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 16px rgba(77,163,255,0.2)' }} onClick={handleSignOut}>
             {(doctor?.name || 'D').charAt(0).toUpperCase()}
           </div>
         </div>

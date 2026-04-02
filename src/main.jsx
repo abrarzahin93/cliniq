@@ -7,7 +7,7 @@ globalStyles.textContent = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: 'Inter', -apple-system, sans-serif;
-    background: #060a14;
+    background: #030508;
     color: #edf2f7;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
