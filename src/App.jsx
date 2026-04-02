@@ -57,13 +57,13 @@ const glassCard = {
 
 // ─── Styles ──────────────────────────────────────────────────────────
 const s = {
-  container: { maxWidth: 920, margin: '0 auto', padding: '20px 16px', fontFamily: T.body },
+  container: { maxWidth: 920, margin: '0 auto', padding: '16px 12px', fontFamily: T.body },
   header: {
     ...glassCard,
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '14px 24px', marginBottom: 28,
-    flexWrap: 'wrap', gap: 12,
-    position: 'sticky', top: 12, zIndex: 50,
+    padding: '10px 14px', marginBottom: 20,
+    flexWrap: 'wrap', gap: 8,
+    position: 'sticky', top: 8, zIndex: 50,
   },
   logo: { display: 'flex', alignItems: 'center', gap: 12 },
   logoIcon: {
@@ -92,28 +92,28 @@ const s = {
     backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
   },
   card: {
-    ...glassCard, padding: 24, marginBottom: 20,
+    ...glassCard, padding: '18px 16px', marginBottom: 14,
   },
   label: {
     fontFamily: T.mono, fontSize: 10, fontWeight: 500, color: T.textMuted,
     textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 6, display: 'block',
   },
   input: {
-    width: '100%', padding: '11px 16px',
+    width: '100%', padding: '10px 14px',
     background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.cardBorder}`,
-    borderRadius: 10, color: T.text, fontSize: 14, outline: 'none', fontFamily: T.body,
+    borderRadius: 10, color: T.text, fontSize: 15, outline: 'none', fontFamily: T.body,
     transition: 'border-color 0.25s, background 0.25s',
   },
   textarea: {
-    width: '100%', padding: '12px 16px',
+    width: '100%', padding: '10px 14px',
     background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.cardBorder}`,
-    borderRadius: 10, color: T.text, fontSize: 14, outline: 'none', fontFamily: T.body,
-    minHeight: 100, resize: 'vertical', transition: 'border-color 0.25s, background 0.25s',
+    borderRadius: 10, color: T.text, fontSize: 15, outline: 'none', fontFamily: T.body,
+    minHeight: 90, resize: 'vertical', transition: 'border-color 0.25s, background 0.25s',
   },
   grid: (cols, gap = 14) => ({
     display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap,
   }),
-  progressBar: { display: 'flex', gap: 6, marginBottom: 28 },
+  progressBar: { display: 'flex', gap: 4, marginBottom: 18 },
   progressStep: (active, done) => ({
     flex: 1, height: 3, borderRadius: 2,
     background: done ? T.accent : active ? 'rgba(77,163,255,0.4)' : 'rgba(255,255,255,0.08)',
@@ -136,8 +136,8 @@ const s = {
     transition: 'all 0.25s ease',
   }),
   toggle: (active) => ({
-    padding: '8px 18px', border: `1px solid ${active ? T.accent : T.cardBorder}`,
-    borderRadius: 10, cursor: 'pointer', fontWeight: 500, fontSize: 13,
+    padding: '7px 14px', border: `1px solid ${active ? T.accent : T.cardBorder}`,
+    borderRadius: 9, cursor: 'pointer', fontWeight: 500, fontSize: 13,
     color: active ? '#000' : T.textDim,
     background: active ? T.accent : 'rgba(255,255,255,0.04)',
     transition: 'all 0.25s ease', fontFamily: T.body,
@@ -146,7 +146,7 @@ const s = {
     ...glassCard,
     background: 'rgba(251,191,36,0.06)',
     border: '1px solid rgba(251,191,36,0.15)',
-    padding: '14px 20px', marginBottom: 24, display: 'flex', alignItems: 'flex-start', gap: 12,
+    padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 10,
   },
   spinner: {
     width: 22, height: 22, border: '2px solid rgba(255,255,255,0.08)',
@@ -1236,23 +1236,24 @@ if (typeof document !== 'undefined' && !document.getElementById('cliniq-responsi
   style.id = 'cliniq-responsive'
   style.textContent = `
     @media (max-width: 640px) {
-      .cliniq-grid-3 { grid-template-columns: 1fr !important; }
-      .cliniq-grid-2 { grid-template-columns: 1fr !important; }
-      .cliniq-tabs { flex-wrap: wrap !important; gap: 6px !important; }
-      .cliniq-stats-row { flex-direction: column !important; }
-      .cliniq-header-nav { flex-direction: column !important; align-items: flex-start !important; }
-      .cliniq-header-actions { width: 100% !important; justify-content: space-between !important; }
+      .cliniq-grid-3 { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+      .cliniq-grid-2 { grid-template-columns: 1fr !important; gap: 10px !important; }
+      .cliniq-tabs { gap: 4px !important; }
+      .cliniq-tabs button { padding: 8px 14px !important; font-size: 12px !important; }
+      .cliniq-stats-row { gap: 10px !important; }
+      .cliniq-header-nav { gap: 10px !important; }
+      .cliniq-header-actions { gap: 6px !important; }
+      .cliniq-mobile-hide { display: none !important; }
     }
-    @media (max-width: 480px) {
-      .cliniq-grid-3 { grid-template-columns: 1fr !important; gap: 8px !important; }
-      .cliniq-grid-2 { grid-template-columns: 1fr !important; gap: 8px !important; }
+    @media (max-width: 420px) {
+      .cliniq-grid-3 { grid-template-columns: 1fr !important; }
     }
     @media print {
       .no-print { display: none !important; }
     }
     .glass-hover:hover {
-      background: rgba(255,255,255,0.07) !important;
-      border-color: rgba(255,255,255,0.15) !important;
+      background: rgba(255,255,255,0.06) !important;
+      border-color: rgba(255,255,255,0.12) !important;
     }
   `
   document.head.appendChild(style)
@@ -1636,35 +1637,34 @@ export default function App() {
     <div style={{ ...s.container, fontFamily: bodyFont }}>
       {/* Header */}
       <header style={s.header}>
-        <div className="cliniq-header-nav" style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+        {/* Row 1: Logo + Nav + Actions */}
+        <div className="cliniq-header-nav" style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
           <div style={s.logo} onMouseDown={handleLogoDown} onMouseUp={handleLogoUp} onTouchStart={handleLogoDown} onTouchEnd={handleLogoUp}>
-            <img src="/favicon.png" alt="ClinIQ" style={{ width: 38, height: 38, borderRadius: 10 }} />
+            <img src="/favicon.png" alt="ClinIQ" style={{ width: 34, height: 34, borderRadius: 9 }} />
             <div>
-              <div style={s.logoText}>{t('cliniq')}</div>
-              <div style={s.logoSub}>{doctor?.name || t('clinicalDecisionSupport')}</div>
+              <div style={{ ...s.logoText, fontSize: 18 }}>{t('cliniq')}</div>
+              <div style={{ ...s.logoSub, fontSize: 9 }}>{doctor?.name}</div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <button style={s.toggle(view === 'consultation')} onClick={() => { setView('consultation'); setSelectedEntry(null) }}>
+          <div style={{ display: 'flex', gap: 3, marginLeft: 'auto' }}>
+            <button style={{ ...s.toggle(view === 'consultation'), padding: '6px 12px', fontSize: 12, borderRadius: 8 }} onClick={() => { setView('consultation'); setSelectedEntry(null) }}>
               {t('consultation')}
             </button>
-            <button style={s.toggle(view === 'dashboard')} onClick={() => { setView('dashboard'); setSelectedEntry(null) }}>
+            <button style={{ ...s.toggle(view === 'dashboard'), padding: '6px 12px', fontSize: 12, borderRadius: 8 }} onClick={() => { setView('dashboard'); setSelectedEntry(null) }}>
               {t('dashboard')}
             </button>
           </div>
         </div>
-        <div className="cliniq-header-actions" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="cliniq-header-actions" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <button
             onClick={toggleLang}
-            style={{ ...s.btnSm(lang === 'bn' ? T.accent : 'rgba(255,255,255,0.1)', lang === 'bn' ? '#000' : T.textDim), fontSize: 13, fontFamily: T.bangla }}
+            style={{ ...s.btnSm(lang === 'bn' ? T.accent : 'rgba(255,255,255,0.08)', lang === 'bn' ? '#000' : T.textMuted), fontSize: 11, padding: '5px 10px', fontFamily: T.bangla }}
           >
-            {lang === 'en' ? 'বাংলা' : 'EN'}
+            {lang === 'en' ? 'বাং' : 'EN'}
           </button>
-          {!isOnline && (
-            <span style={{ ...s.badge(T.amber, T.amberDim), fontSize: 9 }}>OFFLINE</span>
-          )}
-          <button style={s.btnOutline} onClick={reset}>{t('newPatient')}</button>
-          <button style={{ ...s.btnSm('rgba(255,255,255,0.06)', T.textMuted), fontSize: 11 }} onClick={handleSignOut}>Sign Out</button>
+          {!isOnline && <span style={{ ...s.badge(T.amber, T.amberDim), fontSize: 8 }}>OFF</span>}
+          <button style={{ ...s.btnOutline, padding: '6px 12px', fontSize: 12 }} onClick={reset}>{t('newPatient')}</button>
+          <button className="cliniq-mobile-hide" style={{ ...s.btnSm('rgba(255,255,255,0.05)', T.textMuted), fontSize: 10, padding: '5px 10px' }} onClick={handleSignOut}>Sign Out</button>
         </div>
       </header>
 
