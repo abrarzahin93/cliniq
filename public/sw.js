@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cliniq-v2'
+const CACHE_NAME = 'cliniq-v3'
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
