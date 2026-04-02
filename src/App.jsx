@@ -1286,16 +1286,7 @@ function WelcomeScreen({ onRegister, t }) {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, fontFamily: T.body }}>
       <div style={{ ...glassCard, padding: 40, maxWidth: 420, width: '100%', textAlign: 'center' }}>
-        <div style={{ width: 60, height: 60, borderRadius: 16, background: T.surface1, border: `1px solid ${T.glassBorder}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-          <svg viewBox="0 0 512 512" width="36" height="36">
-            <circle cx="155" cy="135" r="20" fill="#fff"/>
-            <rect x="139" y="190" width="32" height="170" rx="16" fill="#fff"/>
-            <path d="M350,260 A95,95 0 1,0 350,261 Z" fill="none" stroke="#fff" strokeWidth="32" strokeLinecap="round"/>
-            <line x1="400" y1="340" x2="435" y2="395" stroke="#fff" strokeWidth="32" strokeLinecap="round"/>
-            <rect x="327" y="232" width="46" height="12" rx="6" fill="#4da3ff"/>
-            <rect x="344" y="215" width="12" height="46" rx="6" fill="#4da3ff"/>
-          </svg>
-        </div>
+        <img src="/favicon.png" alt="ClinIQ" style={{ width: 72, height: 72, borderRadius: 18, marginBottom: 20 }} />
         <div style={{ fontFamily: T.heading, fontSize: 28, color: T.text, marginBottom: 6 }}>ClinIQ</div>
         <div style={{ fontFamily: T.mono, fontSize: 11, color: T.textMuted, marginBottom: 28, textTransform: 'uppercase', letterSpacing: 1.5 }}>{t('clinicalDecisionSupport')}</div>
         <div style={{ fontSize: 15, color: T.textDim, marginBottom: 24 }}>Enter your name to get started</div>
@@ -1647,16 +1638,7 @@ export default function App() {
       <header style={s.header}>
         <div className="cliniq-header-nav" style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
           <div style={s.logo} onMouseDown={handleLogoDown} onMouseUp={handleLogoUp} onTouchStart={handleLogoDown} onTouchEnd={handleLogoUp}>
-            <div style={s.logoIcon}>
-              <svg viewBox="0 0 512 512" width="28" height="28">
-                <circle cx="155" cy="135" r="20" fill="#fff"/>
-                <rect x="139" y="190" width="32" height="170" rx="16" fill="#fff"/>
-                <path d="M350,260 A95,95 0 1,0 350,261 Z" fill="none" stroke="#fff" strokeWidth="32" strokeLinecap="round"/>
-                <line x1="400" y1="340" x2="435" y2="395" stroke="#fff" strokeWidth="32" strokeLinecap="round"/>
-                <rect x="327" y="232" width="46" height="12" rx="6" fill="#4da3ff"/>
-                <rect x="344" y="215" width="12" height="46" rx="6" fill="#4da3ff"/>
-              </svg>
-            </div>
+            <img src="/favicon.png" alt="ClinIQ" style={{ width: 38, height: 38, borderRadius: 10 }} />
             <div>
               <div style={s.logoText}>{t('cliniq')}</div>
               <div style={s.logoSub}>{doctor?.name || t('clinicalDecisionSupport')}</div>
