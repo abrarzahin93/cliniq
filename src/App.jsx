@@ -1752,11 +1752,6 @@ export default function App() {
   const [probingQuestions, setProbingQuestions] = useState(null)
   const [probingAnswers, setProbingAnswers] = useState({})
 
-  // Show welcome screen if no doctor registered
-  if (!doctor && !showAdmin) return <WelcomeScreen onRegister={handleRegister} t={t} />
-  // Show admin panel
-  if (showAdmin) return <AdminPanel onClose={() => setShowAdmin(false)} />
-
   const reset = useCallback(() => {
     setStep(0)
     setPatient(INITIAL_PATIENT)
@@ -1770,6 +1765,11 @@ export default function App() {
     setProbingQuestions(null)
     setProbingAnswers({})
   }, [])
+
+  // Show welcome screen if no doctor registered
+  if (!doctor && !showAdmin) return <WelcomeScreen onRegister={handleRegister} t={t} />
+  // Show admin panel
+  if (showAdmin) return <AdminPanel onClose={() => setShowAdmin(false)} />
 
   const submitDiagnosis = async () => {
     setPhase('diagnosing')
