@@ -1,6 +1,9 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { createT } from './i18n.js'
 import { findBDbrands, getBDprice } from './bdDrugs.js'
+import { checkInteractions, checkAllergies } from './drugInteractions.js'
+import { calcPediatricDose, PEDIATRIC_DRUGS, calcCURB65, calcGCS, calcWells, calcAPGAR, interpretLab } from './clinicalTools.js'
+import { exportCasePDF, generateReferral, shareWhatsApp, generatePatientQR } from './exportTools.js'
 
 // Lazy-load ward book and symptom checker — they're large and not needed on initial render
 let _wardBookSections = null
@@ -998,10 +1001,23 @@ function ClinicalCalculators() {
     return (1500 + (w - 20) * 20).toFixed(0)
   })() : null
 
+  // Pediatric dose calc
+  const pedResult = vals.pedDrug && vals.pedWt ? calcPediatricDose(vals.pedDrug, parseFloat(vals.pedWt)) : null
+  // CURB-65
+  const curb = activeCalc === 'curb' ? calcCURB65({ confusion: vals.cConfusion, urea: parseFloat(vals.cUrea) || 0, rr: parseInt(vals.cRR) || 0, bp: vals.cBP, age: parseInt(vals.cAge) || 0 }) : null
+  // GCS
+  const gcs = activeCalc === 'gcs' ? calcGCS({ eye: vals.gEye, verbal: vals.gVerbal, motor: vals.gMotor }) : null
+  // Lab
+  const labResult = vals.labTest && vals.labVal ? interpretLab(vals.labTest, vals.labVal, vals.labSex || 'male') : null
+
   const calcs = [
     { id: 'bmi', label: 'BMI', icon: '&#9878;' },
     { id: 'gfr', label: 'eGFR', icon: '&#9763;' },
     { id: 'iv', label: 'IV Fluid', icon: '&#9737;' },
+    { id: 'peds', label: 'Peds Dose', icon: '&#9762;' },
+    { id: 'curb', label: 'CURB-65', icon: '&#9733;' },
+    { id: 'gcs', label: 'GCS', icon: '&#9731;' },
+    { id: 'lab', label: 'Lab Interp', icon: '&#9879;' },
   ]
 
   return (
@@ -1049,8 +1065,82 @@ function ClinicalCalculators() {
           <div><div style={s.label}>Body Weight (kg)</div><input type="number" value={vals.ivWt || ''} onChange={e => set('ivWt', e.target.value)} placeholder="70" style={{ ...s.input, fontSize: 15, maxWidth: 200 }} /></div>
           {ivRate && <div style={{ marginTop: 12, textAlign: 'center' }}>
             <span style={{ fontFamily: T.heading, fontSize: 32, color: T.accent }}>{ivRate}</span>
-            <span style={{ fontSize: 12, color: T.textMuted, marginLeft: 8, fontFamily: T.mono }}>mL/24hr</span>
-            <div style={{ fontSize: 11, color: T.textDim, marginTop: 4 }}>{(ivRate / 24).toFixed(0)} mL/hr &middot; {(ivRate / 24 / 60 * 20).toFixed(0)} drops/min (20 drop set)</div>
+            <span style={{ fontSize: 12, color: T.textMuted, marginLeft: 8 }}>mL/24hr</span>
+            <div style={{ fontSize: 11, color: T.textDim, marginTop: 4 }}>{(ivRate / 24).toFixed(0)} mL/hr &middot; {(ivRate / 24 / 60 * 20).toFixed(0)} drops/min</div>
+          </div>}
+        </div>
+      )}
+      {activeCalc === 'peds' && (
+        <div className="cliniq-scale-in" style={{ ...s.card, padding: '14px 16px' }}>
+          <div className="cliniq-grid-2" style={s.grid(2)}>
+            <div><div style={s.label}>Drug</div>
+              <select value={vals.pedDrug || ''} onChange={e => set('pedDrug', e.target.value)} style={{ ...s.input, fontSize: 14 }}>
+                <option value="">Select drug...</option>
+                {PEDIATRIC_DRUGS.map(d => <option key={d.drug} value={d.drug}>{d.drug}</option>)}
+              </select>
+            </div>
+            <div><div style={s.label}>Weight (kg)</div><input type="number" value={vals.pedWt || ''} onChange={e => set('pedWt', e.target.value)} placeholder="12" style={{ ...s.input, fontSize: 15 }} /></div>
+          </div>
+          {pedResult && <div style={{ marginTop: 12, padding: 12, background: 'rgba(77,163,255,0.06)', borderRadius: 12 }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: T.accent }}>{pedResult.calculatedDose}</div>
+            <div style={{ fontSize: 12, color: T.textDim, marginTop: 4 }}>{pedResult.frequency} &middot; {pedResult.route} &middot; Max: {pedResult.maxDose}</div>
+            <div style={{ fontSize: 11, color: T.textMuted, marginTop: 6 }}>Forms: {pedResult.forms.join(', ')}</div>
+          </div>}
+        </div>
+      )}
+      {activeCalc === 'curb' && (
+        <div className="cliniq-scale-in" style={{ ...s.card, padding: '14px 16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[['Confusion', 'cConfusion'], ['Urea > 7 mmol/L', 'cUrea7'], ['RR >= 30', 'cRR30'], ['BP < 90/60', 'cBPlow'], ['Age >= 65', 'cAge65']].map(([label, key]) => (
+              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: T.text, cursor: 'pointer' }}>
+                <input type="checkbox" checked={!!vals[key]} onChange={() => set(key, !vals[key])} style={{ accentColor: T.accent, width: 18, height: 18 }} />
+                {label}
+              </label>
+            ))}
+          </div>
+          {(() => {
+            const score = (vals.cConfusion?1:0) + (vals.cUrea7?1:0) + (vals.cRR30?1:0) + (vals.cBPlow?1:0) + (vals.cAge65?1:0)
+            const risk = score <= 1 ? 'Low' : score === 2 ? 'Moderate' : 'High'
+            const color = score <= 1 ? T.green : score === 2 ? T.amber : T.red
+            return <div style={{ marginTop: 14, textAlign: 'center' }}>
+              <span style={{ fontSize: 36, fontWeight: 700, color }}>{score}</span><span style={{ fontSize: 14, color: T.textMuted }}>/5</span>
+              <div style={{ fontSize: 13, color, marginTop: 4 }}>{risk} risk — {score <= 1 ? 'Outpatient' : score === 2 ? 'Short stay' : 'Admit, consider ICU'}</div>
+            </div>
+          })()}
+        </div>
+      )}
+      {activeCalc === 'gcs' && (
+        <div className="cliniq-scale-in" style={{ ...s.card, padding: '14px 16px' }}>
+          <div style={s.label}>Eye Opening (1-4)</div>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>{[1,2,3,4].map(n => <button key={n} style={{ ...s.toggle(parseInt(vals.gEye) === n), flex: 1, textAlign: 'center', padding: '8px 0' }} onClick={() => set('gEye', n)}>{n}</button>)}</div>
+          <div style={s.label}>Verbal (1-5)</div>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>{[1,2,3,4,5].map(n => <button key={n} style={{ ...s.toggle(parseInt(vals.gVerbal) === n), flex: 1, textAlign: 'center', padding: '8px 0' }} onClick={() => set('gVerbal', n)}>{n}</button>)}</div>
+          <div style={s.label}>Motor (1-6)</div>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>{[1,2,3,4,5,6].map(n => <button key={n} style={{ ...s.toggle(parseInt(vals.gMotor) === n), flex: 1, textAlign: 'center', padding: '8px 0' }} onClick={() => set('gMotor', n)}>{n}</button>)}</div>
+          {gcs && <div style={{ textAlign: 'center' }}>
+            <span style={{ fontSize: 36, fontWeight: 700, color: gcs.total <= 8 ? T.red : gcs.total <= 12 ? T.amber : T.green }}>{gcs.total}</span><span style={{ fontSize: 14, color: T.textMuted }}>/15</span>
+            <div style={{ fontSize: 13, color: gcs.total <= 8 ? T.red : gcs.total <= 12 ? T.amber : T.green, marginTop: 4 }}>{gcs.severity}</div>
+          </div>}
+        </div>
+      )}
+      {activeCalc === 'lab' && (
+        <div className="cliniq-scale-in" style={{ ...s.card, padding: '14px 16px' }}>
+          <div className="cliniq-grid-2" style={s.grid(2)}>
+            <div><div style={s.label}>Test Name</div>
+              <select value={vals.labTest || ''} onChange={e => set('labTest', e.target.value)} style={{ ...s.input, fontSize: 14 }}>
+                <option value="">Select...</option>
+                {['Hemoglobin', 'WBC', 'Platelet', 'ESR', 'Creatinine', 'Urea', 'Sodium', 'Potassium', 'RBS', 'FBS', 'HbA1c', 'SGPT', 'SGOT', 'Bilirubin', 'Albumin', 'ALP', 'TSH', 'CRP', 'Troponin', 'D-dimer', 'INR', 'PT'].map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div><div style={s.label}>Value</div><input type="number" step="any" value={vals.labVal || ''} onChange={e => set('labVal', e.target.value)} placeholder="Enter value" style={{ ...s.input, fontSize: 15 }} /></div>
+          </div>
+          {labResult && <div style={{ marginTop: 12, padding: 12, background: labResult.color === 'green' ? T.greenDim : labResult.color === 'red' ? T.redDim : T.amberDim, borderRadius: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 20, fontWeight: 700, color: labResult.color === 'green' ? T.green : labResult.color === 'red' ? T.red : T.amber }}>{labResult.value} {labResult.unit}</span>
+              <span style={s.badge(labResult.color === 'green' ? T.green : labResult.color === 'red' ? T.red : T.amber, labResult.color === 'green' ? T.greenDim : labResult.color === 'red' ? T.redDim : T.amberDim)}>{labResult.status}</span>
+            </div>
+            <div style={{ fontSize: 12, color: T.textDim, marginTop: 6 }}>{labResult.interpretation}</div>
+            <div style={{ fontSize: 11, color: T.textMuted, marginTop: 4 }}>Ref: {labResult.refLow}–{labResult.refHigh} {labResult.unit}</div>
           </div>}
         </div>
       )}
@@ -2159,6 +2249,55 @@ export default function App() {
                     {activeTab === 'prescription' && txResult && <PrescriptionTab patient={patient} dx={dxResult} tx={txResult} />}
                   </div>
                 </>
+              )}
+
+              {/* Drug Interaction Alerts */}
+              {txResult?.medications && (() => {
+                const interactions = checkInteractions(txResult.medications)
+                const allergies = checkAllergies(txResult.medications, patient.drugHistory)
+                if (!interactions.length && !allergies.length) return null
+                return (
+                  <div className="cliniq-fade-in" style={{ ...s.card, borderLeft: `3px solid ${T.red}`, background: T.redDim }}>
+                    <div style={{ ...s.label, color: T.red }}>Drug Alerts</div>
+                    {allergies.map((a, i) => (
+                      <div key={'a' + i} style={{ padding: '8px 0', borderBottom: `1px solid rgba(248,113,113,0.1)`, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={s.badge('#fff', T.red)}>ALLERGY</span>
+                        <span style={{ fontSize: 13, color: T.text }}>{a.message}</span>
+                      </div>
+                    ))}
+                    {interactions.map((int, i) => (
+                      <div key={'i' + i} style={{ padding: '8px 0', borderBottom: `1px solid rgba(248,113,113,0.1)` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <span style={s.badge('#fff', int.severity === 'critical' ? T.red : int.severity === 'major' ? '#f97316' : T.amber)}>{int.severity}</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{int.drug1} + {int.drug2}</span>
+                        </div>
+                        <div style={{ fontSize: 12, color: T.textDim }}>{int.effect}</div>
+                        <div style={{ fontSize: 11, color: T.amber, marginTop: 2 }}>Action: {int.action}</div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
+
+              {/* Action Buttons — PDF, WhatsApp, QR, Referral */}
+              {phase === 'treated' && (
+                <div className="cliniq-fade-in" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+                  <button style={s.btnSm(T.accent)} onClick={() => exportCasePDF(patient, dxResult, txResult, doctor)}>
+                    Export PDF
+                  </button>
+                  <button style={s.btnSm(T.green)} onClick={() => shareWhatsApp(patient, dxResult, txResult, doctor)}>
+                    WhatsApp
+                  </button>
+                  <button style={s.btnSm('rgba(255,255,255,0.08)', T.textDim)} onClick={() => {
+                    const to = prompt('Refer to (doctor/department name):')
+                    if (to) generateReferral(patient, dxResult, txResult, doctor, to)
+                  }}>
+                    Referral Letter
+                  </button>
+                  {currentLogId && (
+                    <img src={generatePatientQR(currentLogId, patient.name)} alt="QR" style={{ width: 48, height: 48, borderRadius: 8 }} />
+                  )}
+                </div>
               )}
 
               {/* Follow-up scheduler after treatment */}
