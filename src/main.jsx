@@ -1,5 +1,4 @@
 import { createRoot } from 'react-dom/client'
-import App from './App.jsx'
 
 const s = document.createElement('style')
 s.textContent = `
@@ -10,7 +9,7 @@ s.textContent = `
   ::-webkit-scrollbar{width:5px}
   ::-webkit-scrollbar-track{background:transparent}
   ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}
-  @media print{body *{visibility:hidden!important}.no-print{display:none!important}#rx-print,#rx-print *{visibility:visible!important;color:#111!important}#rx-print{position:absolute!important;left:0!important;top:0!important;width:100%!important;background:#fff!important;padding:40px!important;backdrop-filter:none!important;border:none!important}}
+  @media print{body *{visibility:hidden!important}.no-print{display:none!important}#rx-print,#rx-print *{visibility:visible!important;color:#111!important}#rx-print{position:absolute!important;left:0!important;top:0!important;width:100%!important;background:#fff!important;padding:40px!important;border:none!important}}
 `
 document.head.appendChild(s)
 
@@ -18,4 +17,13 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {})
 }
 
-createRoot(document.getElementById('root')).render(<App />)
+async function boot() {
+  try {
+    const { default: App } = await import('./App.jsx')
+    createRoot(document.getElementById('root')).render(<App />)
+  } catch (e) {
+    console.error('BOOT CRASH:', e)
+    document.getElementById('root').innerHTML = '<div style="padding:40px;color:#f87171;font-family:sans-serif;text-align:center"><h2>App Error</h2><pre style="text-align:left;font-size:12px;color:#fbbf24;overflow:auto;max-width:90vw">' + e.stack + '</pre><button onclick="localStorage.clear();location.reload()" style="margin-top:20px;padding:12px 24px;background:#4da3ff;color:#fff;border:none;border-radius:12px;cursor:pointer">Clear Data & Reload</button></div>'
+  }
+}
+boot()

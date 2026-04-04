@@ -116,9 +116,6 @@ function applyTheme(mode) {
     document.body.style.color = T.text
   }
 }
-// Apply saved theme immediately on load
-applyTheme(typeof localStorage !== 'undefined' ? (localStorage.getItem('cliniq_theme') || 'dark') : 'dark')
-
 const blur = '40px'
 function getGlassCard() {
   return {
@@ -280,6 +277,9 @@ const s = {
     overflow: 'hidden',
   }),
 }
+
+// Apply saved theme (MUST be after all style declarations)
+applyTheme(typeof localStorage !== 'undefined' ? (localStorage.getItem('cliniq_theme') || 'dark') : 'dark')
 
 // ─── localStorage ────────────────────────────────────────────────────
 function loadPatientLog() {
