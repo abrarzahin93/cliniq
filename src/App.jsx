@@ -104,6 +104,13 @@ let T = { ...THEMES.dark, heading: "'Inter', -apple-system, sans-serif", body: "
 function applyTheme(mode) {
   const base = THEMES[mode] || THEMES.dark
   Object.assign(T, base)
+  glassCard = getGlassCard()
+  // Refresh key static style properties that read T at definition time
+  if (s.card) Object.assign(s.card, glassCard, { padding: '24px 20px', marginBottom: 20, transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)' })
+  if (s.header) s.header.background = `linear-gradient(180deg, ${T.bg} 60%, transparent)`
+  if (s.input) { s.input.background = T.inputBg; s.input.border = `1px solid ${T.inputBorder}`; s.input.color = T.text }
+  if (s.textarea) { s.textarea.background = T.inputBg; s.textarea.border = `1px solid ${T.inputBorder}`; s.textarea.color = T.text }
+  if (s.bottomNavInner) Object.assign(s.bottomNavInner, { background: T.glass, backdropFilter: 'saturate(180%) blur(40px)', WebkitBackdropFilter: 'saturate(180%) blur(40px)', border: `0.5px solid ${T.glassBorder}` })
   if (typeof document !== 'undefined') {
     document.body.style.background = T.bg
     document.body.style.color = T.text
@@ -123,8 +130,8 @@ function getGlassCard() {
     boxShadow: T.shadow,
   }
 }
-// Static reference for initial load — theme switch does full reload
-const glassCard = getGlassCard()
+// Mutable — reassigned on theme switch
+let glassCard = getGlassCard()
 
 // ─── Styles ──────────────────────────────────────────────────────────
 const s = {
@@ -2008,10 +2015,13 @@ export default function App({ onReady }) {
   // Apply theme on mount and change
   useEffect(() => { applyTheme(themeMode) }, [themeMode])
 
+  const [, forceRender] = useState(0)
   const toggleTheme = () => {
     const next = themeMode === 'dark' ? 'light' : 'dark'
+    setThemeMode(next)
     localStorage.setItem('cliniq_theme', next)
-    window.location.reload() // Full reload needed to recompute all static styles
+    applyTheme(next)
+    forceRender(n => n + 1) // Force re-render to pick up new T values
   }
 
   useEffect(() => {
