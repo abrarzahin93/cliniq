@@ -1997,12 +1997,8 @@ const INITIAL_PATIENT = {
   respiratory: '', abdominal: '', cnsCvs: '',
 }
 
-export default function App({ onReady }) {
-  // Hide preloader + load deferred modules after first paint
-  useEffect(() => {
-    if (onReady) onReady()
-    loadDeferredModules()
-  }, [])
+export default function App() {
+  useEffect(() => { loadDeferredModules() }, [])
 
   const [doctor, setDoctor] = useState(() => loadDoctor())
   const [showAdmin, setShowAdmin] = useState(false)

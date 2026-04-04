@@ -7,34 +7,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#030508" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>ClinIQ</title>
     <link rel="manifest" href="/manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" /></noscript>
-    <style>
-      body { margin: 0; background: #030508; color: #f0f2f5; font-family: -apple-system, system-ui, sans-serif; }
-      #preloader {
-        position: fixed; inset: 0; z-index: 9999; background: #030508;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        transition: opacity 0.3s;
-      }
-      #preloader.hide { opacity: 0; pointer-events: none; }
-      .pl-icon { width: 48px; height: 48px; border-radius: 12px; margin-bottom: 16px; }
-      .pl-name { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
-      .pl-bar { width: 100px; height: 2px; background: rgba(255,255,255,0.06); border-radius: 2px; margin-top: 24px; overflow: hidden; }
-      .pl-fill { height: 100%; width: 30%; background: linear-gradient(90deg, #4da3ff, #7c5cfc); border-radius: 2px; animation: pl 1s ease infinite; }
-      @keyframes pl { 0%{width:10%;margin-left:0}50%{width:50%;margin-left:25%}100%{width:10%;margin-left:90%} }
-    </style>
+    <style>body{margin:0;background:#030508;}</style>
   </head>
   <body>
-    <div id="preloader">
-      <img class="pl-icon" src="/icon-64.png" alt="" />
-      <div class="pl-name">ClinIQ</div>
-      <div class="pl-bar"><div class="pl-fill"></div></div>
-    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
