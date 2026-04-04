@@ -1,13 +1,27 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { createT } from './i18n.js'
-import { findBDbrands, getBDprice } from './bdDrugs.js'
-import { checkInteractions, checkAllergies } from './drugInteractions.js'
-import { calcPediatricDose, PEDIATRIC_DRUGS, calcCURB65, calcGCS, calcWells, calcAPGAR, interpretLab } from './clinicalTools.js'
-import { exportCasePDF, generateReferral, shareWhatsApp, generatePatientQR } from './exportTools.js'
 
-// Lazy-load ward book and symptom checker — they're large and not needed on initial render
-let _wardBookSections = null
-let _symptomChecker = null
+// ─── Lazy module cache ───────────────────────────────────────────────
+let _bdDrugs = null, _interactions = null, _clinicalTools = null, _exportTools = null
+let _wardBookSections = null, _symptomChecker = null
+
+// Sync wrappers — return empty/null if not yet loaded
+function findBDbrands(n) { return _bdDrugs ? _bdDrugs.findBDbrands(n) : [] }
+function getBDprice(n) { return _bdDrugs ? _bdDrugs.getBDprice(n) : null }
+function checkInteractions(m) { return _interactions ? _interactions.checkInteractions(m) : [] }
+function checkAllergies(m, a) { return _interactions ? _interactions.checkAllergies(m, a) : [] }
+function exportCasePDF(...a) { _exportTools?.exportCasePDF(...a) }
+function generateReferral(...a) { _exportTools?.generateReferral(...a) }
+function shareWhatsApp(...a) { _exportTools?.shareWhatsApp(...a) }
+function generatePatientQR(...a) { return _exportTools?.generatePatientQR(...a) || '' }
+
+// Load heavy modules in background after first paint
+function loadDeferredModules() {
+  import('./bdDrugs.js').then(m => { _bdDrugs = m }).catch(() => {})
+  import('./drugInteractions.js').then(m => { _interactions = m }).catch(() => {})
+  import('./exportTools.js').then(m => { _exportTools = m }).catch(() => {})
+  // clinicalTools loaded on demand by calculators
+}
 
 async function getWardBook() {
   if (!_wardBookSections) {
@@ -85,7 +99,7 @@ const THEMES = {
 }
 
 // Mutable theme reference — updated when mode changes
-let T = { ...THEMES.dark, heading: "'Inter', -apple-system, sans-serif", body: "'Inter', -apple-system, sans-serif", bangla: "'Noto Sans Bengali', 'Inter', sans-serif", mono: "'IBM Plex Mono', monospace" }
+let T = { ...THEMES.dark, heading: "'Inter', -apple-system, sans-serif", body: "'Inter', -apple-system, sans-serif", bangla: "'Noto Sans Bengali', 'Inter', sans-serif", mono: "'Inter', monospace" }
 
 function applyTheme(mode) {
   const base = THEMES[mode] || THEMES.dark
@@ -1041,7 +1055,14 @@ function FollowUpScheduler({ logId, currentFollowUp, onSave }) {
 function ClinicalCalculators() {
   const [activeCalc, setActiveCalc] = useState(null)
   const [vals, setVals] = useState({})
+  const [ct, setCt] = useState(null) // lazy clinical tools
   const set = (k, v) => setVals(p => ({ ...p, [k]: v }))
+
+  useEffect(() => {
+    if (activeCalc && !ct) {
+      import('./clinicalTools.js').then(m => { setCt(m); _clinicalTools = m }).catch(() => {})
+    }
+  }, [activeCalc])
 
   const bmi = vals.wt && vals.ht ? (vals.wt / ((vals.ht / 100) ** 2)).toFixed(1) : null
   const bmiCat = bmi ? (bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese') : ''
@@ -1066,6 +1087,9 @@ function ClinicalCalculators() {
   })() : null
 
   // Pediatric dose calc
+  const calcPediatricDose = ct?.calcPediatricDose || (() => null)
+  const PEDIATRIC_DRUGS = ct?.PEDIATRIC_DRUGS || []
+  const interpretLab = ct?.interpretLab || (() => null)
   const pedResult = vals.pedDrug && vals.pedWt ? calcPediatricDose(vals.pedDrug, parseFloat(vals.pedWt)) : null
   // CURB-65
   const curb = activeCalc === 'curb' ? calcCURB65({ confusion: vals.cConfusion, urea: parseFloat(vals.cUrea) || 0, rr: parseInt(vals.cRR) || 0, bp: vals.cBP, age: parseInt(vals.cAge) || 0 }) : null
@@ -1958,7 +1982,13 @@ const INITIAL_PATIENT = {
   respiratory: '', abdominal: '', cnsCvs: '',
 }
 
-export default function App() {
+export default function App({ onReady }) {
+  // Hide preloader + load deferred modules after first paint
+  useEffect(() => {
+    if (onReady) onReady()
+    loadDeferredModules()
+  }, [])
+
   const [doctor, setDoctor] = useState(() => loadDoctor())
   const [showAdmin, setShowAdmin] = useState(false)
   const logoPressTimer = useRef(null)
