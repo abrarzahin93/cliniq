@@ -1360,7 +1360,7 @@ function Dashboard({ patientLog, setPatientLog, onLoadPatient, onViewDetail }) {
 
       {/* ── Overview Tab ── */}
       {dashTab === 'overview' && (
-        <div className="cliniq-fade-in">
+        <div key={dashTab} className="cliniq-tab-content">
           {/* Weekly Activity Graph */}
           <div style={{ ...s.card, padding: '16px 18px' }}>
             <div style={{ ...s.label, marginBottom: 12 }}>Weekly Activity</div>
@@ -1428,7 +1428,7 @@ function Dashboard({ patientLog, setPatientLog, onLoadPatient, onViewDetail }) {
 
       {/* ── Insights Tab ── */}
       {dashTab === 'insights' && (
-        <div className="cliniq-fade-in">
+        <div key={dashTab} className="cliniq-tab-content">
           {/* Diagnosis Distribution */}
           <div style={{ ...s.card, padding: '16px 18px' }}>
             <div style={{ ...s.label, marginBottom: 14 }}>Top Diagnoses</div>
@@ -1467,7 +1467,7 @@ function Dashboard({ patientLog, setPatientLog, onLoadPatient, onViewDetail }) {
 
       {/* ── Follow-ups Calendar Tab ── */}
       {dashTab === 'calendar' && (
-        <div className="cliniq-fade-in">
+        <div key={dashTab} className="cliniq-tab-content">
           {followUpsDue.length > 0 && (
             <div style={{ marginBottom: 16 }}>
               <div style={{ ...s.label, color: T.amber, fontSize: 12, marginBottom: 10 }}>Due Today</div>
@@ -1513,7 +1513,7 @@ function Dashboard({ patientLog, setPatientLog, onLoadPatient, onViewDetail }) {
 
       {/* ── Tools Tab ── */}
       {dashTab === 'tools' && (
-        <div className="cliniq-fade-in">
+        <div key={dashTab} className="cliniq-tab-content">
           <ClinicalCalculators />
           {/* Notes Pad */}
           <div style={{ ...s.label, fontSize: 12, marginBottom: 10 }}>Quick Notes</div>
@@ -1548,7 +1548,7 @@ function Dashboard({ patientLog, setPatientLog, onLoadPatient, onViewDetail }) {
 
       {/* ── Records Tab ── */}
       {dashTab === 'records' && (
-        <div className="cliniq-fade-in">
+        <div key={dashTab} className="cliniq-tab-content">
           <input type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search by name or diagnosis..."
             style={{ ...s.input, marginBottom: 14 }}
@@ -1724,9 +1724,11 @@ if (typeof document !== 'undefined' && !document.getElementById('cliniq-keyframe
     .cliniq-card-hover:hover { border-color: rgba(77,163,255,0.15) !important; transform: translateY(-1px); }
     input:focus, textarea:focus { border-color: rgba(77,163,255,0.4) !important; box-shadow: 0 0 0 3px rgba(77,163,255,0.08) !important; }
     select { color-scheme: dark; }
-    .cliniq-nav-item { -webkit-tap-highlight-color: transparent; }
-    .cliniq-nav-item::after { content: ''; position: absolute; inset: 0; border-radius: 20px; background: currentColor; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
-    .cliniq-nav-item:active::after { opacity: 0.08; }
+    .cliniq-nav-item { -webkit-tap-highlight-color: transparent; user-select: none; }
+    .cliniq-view-enter { animation: viewFadeIn 0.3s cubic-bezier(0.32,0.72,0,1) both; }
+    @keyframes viewFadeIn { from { opacity: 0; transform: translateY(6px) scale(0.99); } to { opacity: 1; transform: none; } }
+    .cliniq-tab-content { animation: tabSwitch 0.25s cubic-bezier(0.32,0.72,0,1) both; }
+    @keyframes tabSwitch { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: none; } }
     .cliniq-orb { position: fixed; border-radius: 50%; filter: blur(140px); pointer-events: none; z-index: 0; }
     .cliniq-orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, #3b1d8e, transparent); top: -150px; right: -150px; opacity: 0.14; }
     .cliniq-orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, #7a1d5a, transparent); bottom: 200px; left: -120px; opacity: 0.08; }
@@ -2340,12 +2342,12 @@ Do not include any text outside the JSON object.`
 
       {/* ─── DASHBOARD VIEW ─── */}
       {view === 'dashboard' && !selectedEntry && (
-        <Dashboard
+        <div key="dash" className="cliniq-view-enter"><Dashboard
           patientLog={patientLog}
           setPatientLog={setPatientLog}
           onLoadPatient={handleLoadPatient}
           onViewDetail={setSelectedEntry}
-        />
+        /></div>
       )}
 
       {view === 'dashboard' && selectedEntry && (
@@ -2359,7 +2361,7 @@ Do not include any text outside the JSON object.`
 
       {/* ─── CONSULTATION VIEW ─── */}
       {view === 'consultation' && (
-        <>
+        <div key="consult" className="cliniq-view-enter">
           {/* Intake Wizard */}
           {(phase === 'intake') && (
             <>
@@ -2449,7 +2451,7 @@ Do not include any text outside the JSON object.`
                       </button>
                     ))}
                   </div>
-                  <div style={s.card}>
+                  <div key={activeTab} className="cliniq-tab-content" style={s.card}>
                     {activeTab === 'diagnosis' && dxResult && <DiagnosisTab dx={dxResult} />}
                     {activeTab === 'investigations' && dxResult && <InvestigationsTab inv={dxResult.investigations} />}
                     {activeTab === 'treatment' && txResult && <TreatmentTab tx={txResult} />}
@@ -2460,7 +2462,7 @@ Do not include any text outside the JSON object.`
                       if (!eduContent) return <div style={{ textAlign: 'center', color: T.textMuted, padding: 40 }}>Could not load educational content.</div>
                       const sec = (title, items) => items?.length ? <div style={{ marginBottom: 18 }}><div style={s.label}>{title}</div>{items.map((item, i) => <div key={i} style={{ fontSize: 14, color: T.textDim, padding: '4px 0', paddingLeft: 12, borderLeft: `2px solid ${T.cardBorder}`, marginBottom: 4 }}>{item}</div>)}</div> : null
                       return (
-                        <div className="cliniq-fade-in">
+                        <div key={dashTab} className="cliniq-tab-content">
                           <div style={{ fontSize: 22, fontWeight: 700, color: T.text, marginBottom: 4 }}>{eduContent.condition}</div>
                           <div style={{ fontSize: 14, color: T.textDim, marginBottom: 20, lineHeight: 1.6 }}>{eduContent.definition}</div>
                           {sec('Etiology', eduContent.etiology)}
@@ -2536,7 +2538,7 @@ Do not include any text outside the JSON object.`
               )}
             </>
           )}
-        </>
+        </div>
       )}
 
       {/* Bottom Nav Bar */}
