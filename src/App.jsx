@@ -2077,6 +2077,9 @@ export default function App({ onReady }) {
     setProbingAnswers({})
   }, [])
 
+  const [eduContent, setEduContent] = useState(null)
+  const [eduLoading, setEduLoading] = useState(false)
+
   // Show welcome screen if no doctor registered
   if (!doctor && !showAdmin) return <WelcomeScreen onRegister={handleRegister} t={t} />
   // Show admin panel
@@ -2238,8 +2241,6 @@ export default function App({ onReady }) {
   }
 
   const StepComponent = STEPS[step]
-  const [eduContent, setEduContent] = useState(null)
-  const [eduLoading, setEduLoading] = useState(false)
 
   const loadEducation = async () => {
     if (eduContent || eduLoading || !dxResult) return
