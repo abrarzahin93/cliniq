@@ -24,44 +24,93 @@ async function getSymptomChecker() {
   return _symptomChecker
 }
 
-// ─── Theme — Ultra-clean Dark Medical ────────────────────────────────
-const T = {
-  bg: '#030508',
-  card: 'rgba(12,16,28,0.65)',
-  cardHover: 'rgba(16,22,38,0.80)',
-  cardBorder: 'rgba(255,255,255,0.06)',
-  glass: 'rgba(10,14,24,0.55)',
-  glassBorder: 'rgba(255,255,255,0.08)',
-  accent: '#4da3ff',
-  accentLight: '#7dbdff',
-  accentDim: 'rgba(77,163,255,0.10)',
-  accentGrad: 'linear-gradient(135deg, #4da3ff, #7c5cfc)',
-  accentDark: '#0a1628',
-  green: '#34d399', greenDim: 'rgba(52,211,153,0.08)',
-  amber: '#fbbf24', amberDim: 'rgba(251,191,36,0.08)',
-  red: '#f87171', redDim: 'rgba(248,113,113,0.08)',
-  text: '#f0f2f5',
-  textDim: 'rgba(255,255,255,0.55)',
-  textMuted: 'rgba(255,255,255,0.28)',
-  surface1: '#0a0e1a',
-  surface2: '#0f1524',
-  shadow: '0 8px 32px rgba(0,0,0,0.5)',
-  glowBlue: '0 0 30px rgba(77,163,255,0.06)',
-  heading: "'Inter', -apple-system, sans-serif",
-  body: "'Inter', -apple-system, sans-serif",
-  bangla: "'Noto Sans Bengali', 'Inter', sans-serif",
-  mono: "'IBM Plex Mono', monospace",
+// ─── Themes ──────────────────────────────────────────────────────────
+const THEMES = {
+  dark: {
+    bg: '#030508',
+    card: 'rgba(12,16,28,0.65)',
+    cardHover: 'rgba(16,22,38,0.80)',
+    cardBorder: 'rgba(255,255,255,0.06)',
+    glass: 'rgba(10,14,24,0.55)',
+    glassBorder: 'rgba(255,255,255,0.08)',
+    accent: '#4da3ff',
+    accentLight: '#7dbdff',
+    accentDim: 'rgba(77,163,255,0.10)',
+    accentGrad: 'linear-gradient(135deg, #4da3ff, #7c5cfc)',
+    accentDark: '#0a1628',
+    green: '#34d399', greenDim: 'rgba(52,211,153,0.08)',
+    amber: '#fbbf24', amberDim: 'rgba(251,191,36,0.08)',
+    red: '#f87171', redDim: 'rgba(248,113,113,0.08)',
+    text: '#f0f2f5',
+    textDim: 'rgba(255,255,255,0.55)',
+    textMuted: 'rgba(255,255,255,0.28)',
+    surface1: '#0a0e1a',
+    surface2: '#0f1524',
+    shadow: '0 8px 32px rgba(0,0,0,0.5)',
+    glowBlue: '0 0 30px rgba(77,163,255,0.06)',
+    inputBg: 'rgba(255,255,255,0.04)',
+    inputBorder: 'rgba(255,255,255,0.06)',
+    toggleInactiveBg: 'rgba(255,255,255,0.03)',
+    toggleInactiveText: 'rgba(255,255,255,0.5)',
+    orbOpacity: [0.14, 0.08, 0.06],
+  },
+  light: {
+    bg: '#f5f7fa',
+    card: 'rgba(255,255,255,0.85)',
+    cardHover: 'rgba(255,255,255,0.95)',
+    cardBorder: 'rgba(0,0,0,0.08)',
+    glass: 'rgba(255,255,255,0.70)',
+    glassBorder: 'rgba(0,0,0,0.06)',
+    accent: '#2563eb',
+    accentLight: '#60a5fa',
+    accentDim: 'rgba(37,99,235,0.10)',
+    accentGrad: 'linear-gradient(135deg, #2563eb, #7c3aed)',
+    accentDark: '#dbeafe',
+    green: '#059669', greenDim: 'rgba(5,150,105,0.08)',
+    amber: '#d97706', amberDim: 'rgba(217,119,6,0.08)',
+    red: '#dc2626', redDim: 'rgba(220,38,38,0.08)',
+    text: '#111827',
+    textDim: 'rgba(0,0,0,0.60)',
+    textMuted: 'rgba(0,0,0,0.35)',
+    surface1: '#ffffff',
+    surface2: '#f9fafb',
+    shadow: '0 4px 24px rgba(0,0,0,0.08)',
+    glowBlue: '0 0 20px rgba(37,99,235,0.06)',
+    inputBg: 'rgba(0,0,0,0.03)',
+    inputBorder: 'rgba(0,0,0,0.10)',
+    toggleInactiveBg: 'rgba(0,0,0,0.04)',
+    toggleInactiveText: 'rgba(0,0,0,0.45)',
+    orbOpacity: [0.06, 0.04, 0.03],
+  },
 }
 
-const blur = '40px'
-const glassCard = {
-  background: T.glass,
-  backdropFilter: `blur(${blur})`,
-  WebkitBackdropFilter: `blur(${blur})`,
-  border: `1px solid ${T.glassBorder}`,
-  borderRadius: 24,
-  boxShadow: T.shadow,
+// Mutable theme reference — updated when mode changes
+let T = { ...THEMES.dark, heading: "'Inter', -apple-system, sans-serif", body: "'Inter', -apple-system, sans-serif", bangla: "'Noto Sans Bengali', 'Inter', sans-serif", mono: "'IBM Plex Mono', monospace" }
+
+function applyTheme(mode) {
+  const base = THEMES[mode] || THEMES.dark
+  Object.assign(T, base)
+  if (typeof document !== 'undefined') {
+    document.body.style.background = T.bg
+    document.body.style.color = T.text
+  }
 }
+// Apply saved theme immediately on load
+applyTheme(typeof localStorage !== 'undefined' ? (localStorage.getItem('cliniq_theme') || 'dark') : 'dark')
+
+const blur = '40px'
+function getGlassCard() {
+  return {
+    background: T.glass,
+    backdropFilter: `blur(${blur})`,
+    WebkitBackdropFilter: `blur(${blur})`,
+    border: `1px solid ${T.glassBorder}`,
+    borderRadius: 24,
+    boxShadow: T.shadow,
+  }
+}
+// Static reference for initial load — theme switch does full reload
+const glassCard = getGlassCard()
 
 // ─── Styles ──────────────────────────────────────────────────────────
 const s = {
@@ -106,13 +155,13 @@ const s = {
   },
   input: {
     width: '100%', padding: '14px 18px',
-    background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.06)`,
+    background: T.inputBg, border: `1px solid ${T.inputBorder}`,
     borderRadius: 16, color: T.text, fontSize: 16, outline: 'none', fontFamily: T.body,
     transition: 'all 0.3s ease',
   },
   textarea: {
     width: '100%', padding: '14px 18px',
-    background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(255,255,255,0.06)`,
+    background: T.inputBg, border: `1px solid ${T.inputBorder}`,
     borderRadius: 16, color: T.text, fontSize: 16, outline: 'none', fontFamily: T.body,
     minHeight: 100, resize: 'vertical', transition: 'all 0.3s ease',
   },
@@ -149,8 +198,8 @@ const s = {
   toggle: (active) => ({
     padding: '10px 18px', border: `1px solid ${active ? 'transparent' : 'rgba(255,255,255,0.06)'}`,
     borderRadius: 14, cursor: 'pointer', fontWeight: 500, fontSize: 14,
-    color: active ? '#fff' : T.textDim,
-    background: active ? T.accentGrad : 'rgba(255,255,255,0.03)',
+    color: active ? '#fff' : T.toggleInactiveText || T.textDim,
+    background: active ? T.accentGrad : T.toggleInactiveBg || 'rgba(255,255,255,0.03)',
     transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)', fontFamily: T.body,
     boxShadow: active ? '0 4px 16px rgba(77,163,255,0.15)' : 'none',
   }),
@@ -1659,7 +1708,9 @@ function BDbrands({ drugName }) {
 
 // ─── Welcome Screen ──────────────────────────────────────────────────
 function WelcomeScreen({ onRegister, t }) {
+  const [mode, setMode] = useState('signup') // signup | dev
   const [form, setForm] = useState({ name: '', nid: '', session: '', college: '', bmdc: '' })
+  const [devPass, setDevPass] = useState('')
   const [err, setErr] = useState('')
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
@@ -1670,17 +1721,17 @@ function WelcomeScreen({ onRegister, t }) {
     if (!form.bmdc.trim()) return setErr('BMDC registration number is required')
     setErr('')
     const doc = {
-      name: form.name.trim(),
-      nid: form.nid.trim(),
-      session: form.session.trim(),
-      college: form.college.trim(),
-      bmdc: form.bmdc.trim(),
-      id: crypto.randomUUID?.() || String(Date.now()),
-      registeredAt: new Date().toISOString(),
+      name: form.name.trim(), nid: form.nid.trim(), session: form.session.trim(),
+      college: form.college.trim(), bmdc: form.bmdc.trim(),
+      id: crypto.randomUUID?.() || String(Date.now()), registeredAt: new Date().toISOString(),
     }
-    saveDoctor(doc)
-    apiPost('/register', doc)
-    onRegister(doc)
+    saveDoctor(doc); apiPost('/register', doc); onRegister(doc)
+  }
+
+  const handleDevLogin = () => {
+    if (devPass !== '1234') return setErr('Invalid developer password')
+    const doc = { name: 'Developer', nid: 'DEV', session: 'DEV', college: 'DEV', bmdc: 'DEV-MODE', id: 'dev-' + Date.now(), registeredAt: new Date().toISOString(), isDev: true }
+    saveDoctor(doc); onRegister(doc)
   }
 
   const fieldStyle = { ...s.input, marginBottom: 14, textAlign: 'left' }
@@ -1690,45 +1741,59 @@ function WelcomeScreen({ onRegister, t }) {
       <div className="cliniq-orb cliniq-orb-1" />
       <div className="cliniq-orb cliniq-orb-2" />
       <div style={{ ...glassCard, padding: '36px 28px', maxWidth: 440, width: '100%', position: 'relative', zIndex: 1 }}>
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <img src="/favicon.png" alt="ClinIQ" style={{ width: 64, height: 64, borderRadius: 16, marginBottom: 16 }} />
           <div style={{ fontSize: 26, fontWeight: 700, color: T.text, letterSpacing: -0.5 }}>ClinIQ</div>
           <div style={{ fontSize: 12, color: T.textMuted, marginTop: 4 }}>Clinical Decision Support</div>
         </div>
 
-        <div style={{ fontSize: 16, fontWeight: 600, color: T.text, marginBottom: 20 }}>Doctor Registration</div>
-
-        <div style={s.label}>Full Name</div>
-        <input type="text" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Dr. Your Full Name" style={fieldStyle} />
-
-        <div style={s.label}>NID Card Number</div>
-        <input type="text" value={form.nid} onChange={e => set('nid', e.target.value)} placeholder="National ID number" style={fieldStyle} inputMode="numeric" />
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div>
-            <div style={s.label}>Session</div>
-            <input type="text" value={form.session} onChange={e => set('session', e.target.value)} placeholder="e.g. 2018-19" style={fieldStyle} />
-          </div>
-          <div>
-            <div style={s.label}>BMDC Reg. No.</div>
-            <input type="text" value={form.bmdc} onChange={e => set('bmdc', e.target.value)} placeholder="A-12345" style={fieldStyle} />
-          </div>
+        {/* Mode toggle */}
+        <div style={{ display: 'flex', gap: 4, marginBottom: 20 }}>
+          <button style={{ ...s.toggle(mode === 'signup'), flex: 1, textAlign: 'center', padding: '9px 0', fontSize: 13 }} onClick={() => { setMode('signup'); setErr('') }}>
+            Doctor Sign Up
+          </button>
+          <button style={{ ...s.toggle(mode === 'dev'), flex: 1, textAlign: 'center', padding: '9px 0', fontSize: 13 }} onClick={() => { setMode('dev'); setErr('') }}>
+            Dev Mode
+          </button>
         </div>
 
-        <div style={s.label}>Medical College</div>
-        <input type="text" value={form.college} onChange={e => set('college', e.target.value)} placeholder="e.g. Mymensingh Medical College"
-          onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-          style={fieldStyle} />
+        {mode === 'signup' && (
+          <>
+            <div style={s.label}>Full Name</div>
+            <input type="text" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Dr. Your Full Name" style={fieldStyle} />
+            <div style={s.label}>NID Card Number</div>
+            <input type="text" value={form.nid} onChange={e => set('nid', e.target.value)} placeholder="National ID number" style={fieldStyle} inputMode="numeric" />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <div style={s.label}>Session</div>
+                <input type="text" value={form.session} onChange={e => set('session', e.target.value)} placeholder="e.g. 2018-19" style={fieldStyle} />
+              </div>
+              <div>
+                <div style={s.label}>BMDC Reg. No.</div>
+                <input type="text" value={form.bmdc} onChange={e => set('bmdc', e.target.value)} placeholder="A-12345" style={fieldStyle} />
+              </div>
+            </div>
+            <div style={s.label}>Medical College</div>
+            <input type="text" value={form.college} onChange={e => set('college', e.target.value)} placeholder="e.g. Mymensingh Medical College"
+              onKeyDown={e => e.key === 'Enter' && handleSubmit()} style={fieldStyle} />
+            {err && <div style={{ fontSize: 13, color: T.red, marginBottom: 12, textAlign: 'center' }}>{err}</div>}
+            <button style={{ ...s.btn(T.accent), width: '100%', padding: '14px 0', fontSize: 16, marginTop: 4 }} onClick={handleSubmit}>Sign Up</button>
+            <div style={{ fontSize: 11, color: T.textMuted, textAlign: 'center', marginTop: 16, lineHeight: 1.5 }}>
+              By signing up, you confirm that you are a registered medical practitioner with a valid BMDC license.
+            </div>
+          </>
+        )}
 
-        {err && <div style={{ fontSize: 13, color: T.red, marginBottom: 12, textAlign: 'center' }}>{err}</div>}
-
-        <button style={{ ...s.btn(T.accent), width: '100%', padding: '14px 0', fontSize: 16, marginTop: 4 }} onClick={handleSubmit}>
-          Sign Up
-        </button>
-
-        <div style={{ fontSize: 11, color: T.textMuted, textAlign: 'center', marginTop: 16, lineHeight: 1.5 }}>
-          By signing up, you confirm that you are a registered medical practitioner with a valid BMDC license.
-        </div>
+        {mode === 'dev' && (
+          <>
+            <div style={{ fontSize: 14, color: T.textDim, marginBottom: 16, textAlign: 'center' }}>Enter developer password to bypass registration</div>
+            <div style={s.label}>Developer Password</div>
+            <input type="password" value={devPass} onChange={e => setDevPass(e.target.value)} placeholder="Enter password"
+              onKeyDown={e => e.key === 'Enter' && handleDevLogin()} style={{ ...fieldStyle, textAlign: 'center', fontSize: 18, letterSpacing: 4 }} />
+            {err && <div style={{ fontSize: 13, color: T.red, marginBottom: 12, textAlign: 'center' }}>{err}</div>}
+            <button style={{ ...s.btn(T.accent), width: '100%', padding: '14px 0', fontSize: 16, marginTop: 4 }} onClick={handleDevLogin}>Enter Dev Mode</button>
+          </>
+        )}
       </div>
     </div>
   )
@@ -1843,9 +1908,19 @@ export default function App() {
   const logoPressTimer = useRef(null)
 
   const [lang, setLang] = useState(() => localStorage.getItem('cliniq_lang') || 'en')
+  const [themeMode, setThemeMode] = useState(() => localStorage.getItem('cliniq_theme') || 'dark')
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const t = useMemo(() => createT(lang), [lang])
   const bodyFont = lang === 'bn' ? T.bangla : T.body
+
+  // Apply theme on mount and change
+  useEffect(() => { applyTheme(themeMode) }, [themeMode])
+
+  const toggleTheme = () => {
+    const next = themeMode === 'dark' ? 'light' : 'dark'
+    localStorage.setItem('cliniq_theme', next)
+    window.location.reload() // Full reload needed to recompute all static styles
+  }
 
   useEffect(() => {
     const on = () => setIsOnline(true)
@@ -2327,8 +2402,16 @@ export default function App() {
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
           <span>New</span>
         </button>
+        <button style={s.bottomNavItem(false)} onClick={toggleTheme}>
+          {themeMode === 'dark' ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+          )}
+          <span>{themeMode === 'dark' ? 'Light' : 'Dark'}</span>
+        </button>
         <button style={s.bottomNavItem(false)} onClick={toggleLang}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
           <span>{lang === 'en' ? 'বাং' : 'EN'}</span>
         </button>
       </nav>
