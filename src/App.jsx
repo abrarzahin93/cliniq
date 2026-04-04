@@ -131,9 +131,9 @@ const s = {
   container: { maxWidth: 480, margin: '0 auto', padding: '12px 16px 100px', fontFamily: T.body, position: 'relative', zIndex: 1 },
   header: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '16px 0', marginBottom: 8,
+    padding: '16px 4px', marginBottom: 8,
     position: 'sticky', top: 0, zIndex: 50,
-    background: 'linear-gradient(180deg, #030508 60%, transparent)',
+    background: `linear-gradient(180deg, ${T.bg} 60%, transparent)`,
     paddingTop: 12,
   },
   logo: { display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' },
@@ -247,28 +247,30 @@ const s = {
   },
   bottomNav: {
     position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
-    padding: '0 12px', paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
+    padding: '0 10px', paddingBottom: 'max(6px, env(safe-area-inset-bottom))',
     display: 'flex', justifyContent: 'center',
   },
   bottomNavInner: {
-    display: 'flex', justifyContent: 'space-around', alignItems: 'center',
-    background: T.glass, backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
-    border: `1px solid ${T.glassBorder}`,
-    borderRadius: 22, padding: '6px 8px', gap: 2,
-    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-    width: '100%', maxWidth: 420,
+    display: 'flex', justifyContent: 'space-evenly', alignItems: 'center',
+    background: T.glass, backdropFilter: 'saturate(180%) blur(40px)', WebkitBackdropFilter: 'saturate(180%) blur(40px)',
+    border: `0.5px solid ${T.glassBorder}`,
+    borderRadius: 28, padding: '4px 6px',
+    boxShadow: `0 2px 20px rgba(0,0,0,0.15), inset 0 0.5px 0 rgba(255,255,255,0.06)`,
+    width: '100%', maxWidth: 400,
   },
   bottomNavItem: (active) => ({
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-    background: active ? T.accentDim : 'none',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
+    background: active ? T.accentDim : 'transparent',
     border: 'none', cursor: 'pointer',
-    padding: active ? '8px 16px' : '8px 12px',
-    borderRadius: 16,
+    padding: '8px 14px',
+    borderRadius: 20,
     color: active ? T.accent : T.textMuted,
-    fontSize: 9, fontFamily: T.body, fontWeight: active ? 700 : 400,
-    transition: 'all 0.4s cubic-bezier(0.4,0,0.2,1)',
-    transform: active ? 'scale(1.05)' : 'scale(1)',
-    letterSpacing: 0.3,
+    fontSize: 9, fontFamily: T.body, fontWeight: active ? 600 : 400,
+    transition: 'all 0.5s cubic-bezier(0.32, 0.72, 0, 1)',
+    letterSpacing: 0.2,
+    WebkitTapHighlightColor: 'transparent',
+    position: 'relative',
+    overflow: 'hidden',
   }),
 }
 
@@ -1711,9 +1713,13 @@ if (typeof document !== 'undefined' && !document.getElementById('cliniq-keyframe
     .cliniq-slide-in { animation: slideInRight 0.4s cubic-bezier(0.4,0,0.2,1) both; }
     .cliniq-bounce-in { animation: bounceIn 0.5s cubic-bezier(0.4,0,0.2,1) both; }
     .cliniq-skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 75%); background-size: 200% 100%; animation: skeletonShimmer 1.5s ease infinite; border-radius: 8px; }
-    button:active { transform: scale(0.97) !important; }
-    .cliniq-card-hover:hover { border-color: rgba(77,163,255,0.2) !important; box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 16px rgba(77,163,255,0.08) !important; transform: translateY(-1px); }
-    input:focus, textarea:focus { border-color: #4da3ff !important; background: rgba(77,163,255,0.04) !important; box-shadow: 0 0 0 3px rgba(77,163,255,0.1), inset 0 1px 2px rgba(0,0,0,0.2) !important; }
+    button:active { transform: scale(0.96) !important; transition-duration: 0.1s !important; }
+    .cliniq-card-hover:hover { border-color: rgba(77,163,255,0.15) !important; transform: translateY(-1px); }
+    input:focus, textarea:focus { border-color: rgba(77,163,255,0.4) !important; box-shadow: 0 0 0 3px rgba(77,163,255,0.08) !important; }
+    select { color-scheme: dark; }
+    .cliniq-nav-item { -webkit-tap-highlight-color: transparent; }
+    .cliniq-nav-item::after { content: ''; position: absolute; inset: 0; border-radius: 20px; background: currentColor; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+    .cliniq-nav-item:active::after { opacity: 0.08; }
     .cliniq-orb { position: fixed; border-radius: 50%; filter: blur(140px); pointer-events: none; z-index: 0; }
     .cliniq-orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, #3b1d8e, transparent); top: -150px; right: -150px; opacity: 0.14; }
     .cliniq-orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, #7a1d5a, transparent); bottom: 200px; left: -120px; opacity: 0.08; }
@@ -2526,29 +2532,26 @@ Do not include any text outside the JSON object.`
       {/* Bottom Nav Bar */}
       <nav style={s.bottomNav}>
         <div style={s.bottomNavInner}>
-          <button style={s.bottomNavItem(view === 'consultation')} onClick={() => { setView('consultation'); setSelectedEntry(null) }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill={view === 'consultation' ? T.accent : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8"/></svg>
-            <span>Consult</span>
-          </button>
-          <button style={s.bottomNavItem(view === 'dashboard')} onClick={() => { setView('dashboard'); setSelectedEntry(null) }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill={view === 'dashboard' ? T.accent : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
-            <span>Dashboard</span>
-          </button>
-          <button style={{ ...s.bottomNavItem(false), color: T.accent, background: T.accentDim, borderRadius: 16, padding: '10px 16px' }} onClick={reset}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </button>
-          <button style={s.bottomNavItem(false)} onClick={toggleTheme}>
-            {themeMode === 'dark' ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-            )}
-            <span>{themeMode === 'dark' ? 'Light' : 'Dark'}</span>
-          </button>
-          <button style={s.bottomNavItem(false)} onClick={toggleLang}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-            <span>{lang === 'en' ? 'বাং' : 'EN'}</span>
-          </button>
+          {[
+            { id: 'consultation', label: 'Consult', icon: (a) => <svg width="21" height="21" viewBox="0 0 24 24" fill={a ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={a ? 0 : 1.5} strokeLinecap="round"><path d="M9 12h6M9 16h6M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-5-6z"/>{!a && <path d="M14 2v4a2 2 0 002 2h4"/>}</svg>, action: () => { setView('consultation'); setSelectedEntry(null) } },
+            { id: 'dashboard', label: 'Dashboard', icon: (a) => <svg width="21" height="21" viewBox="0 0 24 24" fill={a ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={a ? 0 : 1.5} strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>, action: () => { setView('dashboard'); setSelectedEntry(null) } },
+            { id: '_new', label: '', icon: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>, action: reset, special: true },
+            { id: '_theme', label: themeMode === 'dark' ? 'Light' : 'Dark', icon: () => themeMode === 'dark' ? <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.73 12.73l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg> : <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>, action: toggleTheme },
+            { id: '_lang', label: lang === 'en' ? 'বাং' : 'EN', icon: () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>, action: toggleLang },
+          ].map(tab => {
+            const isActive = tab.id === view
+            return (
+              <button key={tab.id} className="cliniq-nav-item"
+                style={tab.special
+                  ? { ...s.bottomNavItem(false), color: T.accent, background: T.accentDim, borderRadius: 22, padding: '10px 14px', minWidth: 44 }
+                  : s.bottomNavItem(isActive)
+                }
+                onClick={tab.action}>
+                {tab.icon(isActive)}
+                {tab.label && <span style={{ marginTop: 1 }}>{tab.label}</span>}
+              </button>
+            )
+          })}
         </div>
       </nav>
     </div>
