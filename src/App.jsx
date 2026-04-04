@@ -233,16 +233,27 @@ const s = {
   },
   bottomNav: {
     position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
-    background: 'rgba(3,5,8,0.85)', backdropFilter: 'blur(30px)', WebkitBackdropFilter: 'blur(30px)',
-    borderTop: '1px solid rgba(255,255,255,0.04)',
-    display: 'flex', justifyContent: 'space-around', padding: '6px 0',
-    paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
+    padding: '0 12px', paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
+    display: 'flex', justifyContent: 'center',
+  },
+  bottomNavInner: {
+    display: 'flex', justifyContent: 'space-around', alignItems: 'center',
+    background: T.glass, backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)',
+    border: `1px solid ${T.glassBorder}`,
+    borderRadius: 22, padding: '6px 8px', gap: 2,
+    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+    width: '100%', maxWidth: 420,
   },
   bottomNavItem: (active) => ({
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-    background: 'none', border: 'none', cursor: 'pointer', padding: '6px 16px',
-    color: active ? T.accent : T.textMuted, fontSize: 10, fontFamily: T.body,
-    fontWeight: active ? 600 : 400, transition: 'all 0.3s ease',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+    background: active ? T.accentDim : 'none',
+    border: 'none', cursor: 'pointer',
+    padding: active ? '8px 16px' : '8px 12px',
+    borderRadius: 16,
+    color: active ? T.accent : T.textMuted,
+    fontSize: 9, fontFamily: T.body, fontWeight: active ? 700 : 400,
+    transition: 'all 0.4s cubic-bezier(0.4,0,0.2,1)',
+    transform: active ? 'scale(1.05)' : 'scale(1)',
     letterSpacing: 0.3,
   }),
 }
@@ -285,6 +296,10 @@ function apiPost(path, body) {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   }).catch(() => {}) // fire-and-forget
+}
+
+function trackEvent(doctorId, event, meta) {
+  apiPost('/analytics', { doctorId, event, meta })
 }
 
 async function apiAdminStats() {
@@ -1474,6 +1489,27 @@ function Dashboard({ patientLog, setPatientLog, onLoadPatient, onViewDetail }) {
             placeholder="Personal scratchpad — persists across sessions..."
             style={{ ...s.textarea, minHeight: 120, fontSize: 14 }}
           />
+
+          {/* Invite Colleague */}
+          <div style={{ ...s.label, fontSize: 12, marginBottom: 10, marginTop: 20 }}>Invite a Colleague</div>
+          <div style={{ ...s.card, padding: '16px 18px', textAlign: 'center' }}>
+            <div style={{ fontSize: 14, color: T.textDim, marginBottom: 14 }}>Share ClinIQ with fellow doctors</div>
+            <button style={s.btn(T.accent)} onClick={() => {
+              const text = `Hey! I'm using ClinIQ — an AI clinical decision support tool for doctors. It helps with diagnosis, treatment planning, and prescriptions with BD drug brands. Try it: https://cliniq.abrarzahin.com`
+              if (navigator.share) {
+                navigator.share({ title: 'ClinIQ', text, url: 'https://cliniq.abrarzahin.com' }).catch(() => {})
+              } else {
+                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+              }
+            }}>
+              Invite via WhatsApp
+            </button>
+            <button style={{ ...s.btnOutline, marginTop: 8, display: 'block', width: '100%' }} onClick={() => {
+              navigator.clipboard?.writeText('https://cliniq.abrarzahin.com').then(() => alert('Link copied!'))
+            }}>
+              Copy Invite Link
+            </button>
+          </div>
         </div>
       )}
 
@@ -1878,6 +1914,26 @@ function AdminPanel({ onClose }) {
                 </div>
               </>
             )}
+
+            {/* Feature Usage Analytics */}
+            {stats.featureUsage?.length > 0 && (
+              <>
+                <div style={{ ...s.label, fontSize: 13, marginBottom: 12, marginTop: 24 }}>Feature Usage</div>
+                {stats.featureUsage.map((f, i) => (
+                  <div key={i} style={{ ...s.card, padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: T.text, fontSize: 13 }}>{f.event}</span>
+                    <span style={s.badge(T.accent, T.accentDim)}>{f.c}x</span>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {stats.activeToday !== undefined && (
+              <div style={{ ...s.card, marginTop: 24, textAlign: 'center', padding: '16px' }}>
+                <div style={{ fontSize: 11, color: T.textMuted, textTransform: 'uppercase' }}>Active Doctors Today</div>
+                <div style={{ fontSize: 36, fontWeight: 700, color: T.accent }}>{stats.activeToday}</div>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -1996,6 +2052,7 @@ export default function App() {
       setDxResult(result)
       // Enter probing phase — generate follow-up questions
       setPhase('probing')
+      trackEvent(doctor?.id, 'diagnosis_complete', { diagnosis: result.primary_diagnosis, confidence: result.confidence })
       setProbingQuestions(null)
       setProbingAnswers({})
       try {
@@ -2099,6 +2156,7 @@ export default function App() {
       setCurrentLogId(logEntry.id)
       // Sync to server
       apiPost('/log', { doctorId: doctor?.id, doctorName: doctor?.name, patientName: patient.name, diagnosis: dxResult.primary_diagnosis, treatmentType: type, timestamp: logEntry.timestamp })
+      trackEvent(doctor?.id, 'treatment_complete', { type, diagnosis: dxResult.primary_diagnosis })
     } catch (e) {
       setError(e.message)
       setPhase('diagnosed')
@@ -2132,11 +2190,39 @@ export default function App() {
   }
 
   const StepComponent = STEPS[step]
+  const [eduContent, setEduContent] = useState(null)
+  const [eduLoading, setEduLoading] = useState(false)
+
+  const loadEducation = async () => {
+    if (eduContent || eduLoading || !dxResult) return
+    setEduLoading(true)
+    try {
+      const prompt = `You are a medical educator. For the diagnosis "${dxResult.primary_diagnosis}", provide a concise educational summary a junior doctor can learn from. Respond ONLY with valid JSON:
+{
+  "condition": "string",
+  "definition": "string (1-2 sentences)",
+  "etiology": ["string"],
+  "pathophysiology": "string (2-3 sentences)",
+  "classic_presentation": ["string"],
+  "key_investigations": ["string"],
+  "management_principles": ["string"],
+  "complications": ["string"],
+  "pearl": "string (one clinical pearl or exam tip)"
+}
+Do not include any text outside the JSON object.`
+      const langNote = lang === 'bn' ? '\nGenerate all text in Bangla.' : ''
+      const result = await callClaude(prompt + langNote, `Diagnosis: ${dxResult.primary_diagnosis}\nDifferentials: ${dxResult.differentials?.map(d => d.diagnosis).join(', ')}`)
+      setEduContent(result)
+    } catch { setEduContent(null) }
+    setEduLoading(false)
+  }
+
   const tabs = [
     { id: 'diagnosis', label: t('diagnosisTab'), show: !!dxResult },
     { id: 'investigations', label: t('investigationsTab'), show: !!dxResult?.investigations },
     { id: 'treatment', label: t('treatmentTab'), show: !!txResult },
     { id: 'prescription', label: t('prescriptionTab'), show: !!txResult?.medications },
+    { id: 'learn', label: 'Learn', show: !!dxResult },
   ].filter(tb => tb.show)
 
   return (
@@ -2322,6 +2408,25 @@ export default function App() {
                     {activeTab === 'investigations' && dxResult && <InvestigationsTab inv={dxResult.investigations} />}
                     {activeTab === 'treatment' && txResult && <TreatmentTab tx={txResult} />}
                     {activeTab === 'prescription' && txResult && <PrescriptionTab patient={patient} dx={dxResult} tx={txResult} />}
+                    {activeTab === 'learn' && dxResult && (() => {
+                      if (!eduContent && !eduLoading) loadEducation()
+                      if (eduLoading) return <div style={{ textAlign: 'center', padding: 40 }}><div style={{ ...s.spinner, margin: '0 auto 16px' }} /><div style={{ fontSize: 13, color: T.textMuted }}>Generating educational content...</div></div>
+                      if (!eduContent) return <div style={{ textAlign: 'center', color: T.textMuted, padding: 40 }}>Could not load educational content.</div>
+                      const sec = (title, items) => items?.length ? <div style={{ marginBottom: 18 }}><div style={s.label}>{title}</div>{items.map((item, i) => <div key={i} style={{ fontSize: 14, color: T.textDim, padding: '4px 0', paddingLeft: 12, borderLeft: `2px solid ${T.cardBorder}`, marginBottom: 4 }}>{item}</div>)}</div> : null
+                      return (
+                        <div className="cliniq-fade-in">
+                          <div style={{ fontSize: 22, fontWeight: 700, color: T.text, marginBottom: 4 }}>{eduContent.condition}</div>
+                          <div style={{ fontSize: 14, color: T.textDim, marginBottom: 20, lineHeight: 1.6 }}>{eduContent.definition}</div>
+                          {sec('Etiology', eduContent.etiology)}
+                          {eduContent.pathophysiology && <div style={{ marginBottom: 18 }}><div style={s.label}>Pathophysiology</div><div style={{ fontSize: 14, color: T.textDim, lineHeight: 1.6 }}>{eduContent.pathophysiology}</div></div>}
+                          {sec('Classic Presentation', eduContent.classic_presentation)}
+                          {sec('Key Investigations', eduContent.key_investigations)}
+                          {sec('Management Principles', eduContent.management_principles)}
+                          {sec('Complications', eduContent.complications)}
+                          {eduContent.pearl && <div style={{ ...s.card, borderLeft: `3px solid ${T.accent}`, background: T.accentDim, padding: '14px 18px', marginTop: 8 }}><div style={{ ...s.label, color: T.accent }}>Clinical Pearl</div><div style={{ fontSize: 14, color: T.text, lineHeight: 1.6 }}>{eduContent.pearl}</div></div>}
+                        </div>
+                      )
+                    })()}
                   </div>
                 </>
               )}
@@ -2357,7 +2462,7 @@ export default function App() {
               {/* Action Buttons — PDF, WhatsApp, QR, Referral */}
               {phase === 'treated' && (
                 <div className="cliniq-fade-in" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-                  <button style={s.btnSm(T.accent)} onClick={() => exportCasePDF(patient, dxResult, txResult, doctor)}>
+                  <button style={s.btnSm(T.accent)} onClick={() => { exportCasePDF(patient, dxResult, txResult, doctor); trackEvent(doctor?.id, 'pdf_export') }}>
                     Export PDF
                   </button>
                   <button style={s.btnSm(T.green)} onClick={() => shareWhatsApp(patient, dxResult, txResult, doctor)}>
@@ -2390,30 +2495,31 @@ export default function App() {
 
       {/* Bottom Nav Bar */}
       <nav style={s.bottomNav}>
-        <button style={s.bottomNavItem(view === 'consultation')} onClick={() => { setView('consultation'); setSelectedEntry(null) }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
-          <span>Consult</span>
-        </button>
-        <button style={s.bottomNavItem(view === 'dashboard')} onClick={() => { setView('dashboard'); setSelectedEntry(null) }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-          <span>Dashboard</span>
-        </button>
-        <button style={{ ...s.bottomNavItem(false), color: T.accent }} onClick={reset}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-          <span>New</span>
-        </button>
-        <button style={s.bottomNavItem(false)} onClick={toggleTheme}>
-          {themeMode === 'dark' ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-          ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-          )}
-          <span>{themeMode === 'dark' ? 'Light' : 'Dark'}</span>
-        </button>
-        <button style={s.bottomNavItem(false)} onClick={toggleLang}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-          <span>{lang === 'en' ? 'বাং' : 'EN'}</span>
-        </button>
+        <div style={s.bottomNavInner}>
+          <button style={s.bottomNavItem(view === 'consultation')} onClick={() => { setView('consultation'); setSelectedEntry(null) }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill={view === 'consultation' ? T.accent : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8"/></svg>
+            <span>Consult</span>
+          </button>
+          <button style={s.bottomNavItem(view === 'dashboard')} onClick={() => { setView('dashboard'); setSelectedEntry(null) }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill={view === 'dashboard' ? T.accent : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
+            <span>Dashboard</span>
+          </button>
+          <button style={{ ...s.bottomNavItem(false), color: T.accent, background: T.accentDim, borderRadius: 16, padding: '10px 16px' }} onClick={reset}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button style={s.bottomNavItem(false)} onClick={toggleTheme}>
+            {themeMode === 'dark' ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+            )}
+            <span>{themeMode === 'dark' ? 'Light' : 'Dark'}</span>
+          </button>
+          <button style={s.bottomNavItem(false)} onClick={toggleLang}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+            <span>{lang === 'en' ? 'বাং' : 'EN'}</span>
+          </button>
+        </div>
       </nav>
     </div>
   )
