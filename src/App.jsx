@@ -1569,30 +1569,76 @@ function BDbrands({ drugName }) {
 
 // ─── Welcome Screen ──────────────────────────────────────────────────
 function WelcomeScreen({ onRegister, t }) {
-  const [name, setName] = useState('')
+  const [form, setForm] = useState({ name: '', nid: '', session: '', college: '', bmdc: '' })
+  const [err, setErr] = useState('')
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
+
   const handleSubmit = () => {
-    if (!name.trim()) return
-    const doc = { name: name.trim(), id: crypto.randomUUID?.() || String(Date.now()), registeredAt: new Date().toISOString() }
+    if (!form.name.trim()) return setErr('Name is required')
+    if (!form.nid.trim() || form.nid.trim().length < 10) return setErr('Valid NID number is required')
+    if (!form.college.trim()) return setErr('Medical college name is required')
+    if (!form.bmdc.trim()) return setErr('BMDC registration number is required')
+    setErr('')
+    const doc = {
+      name: form.name.trim(),
+      nid: form.nid.trim(),
+      session: form.session.trim(),
+      college: form.college.trim(),
+      bmdc: form.bmdc.trim(),
+      id: crypto.randomUUID?.() || String(Date.now()),
+      registeredAt: new Date().toISOString(),
+    }
     saveDoctor(doc)
     apiPost('/register', doc)
     onRegister(doc)
   }
+
+  const fieldStyle = { ...s.input, marginBottom: 14, textAlign: 'left' }
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, fontFamily: T.body }}>
-      <div style={{ ...glassCard, padding: 40, maxWidth: 420, width: '100%', textAlign: 'center' }}>
-        <img src="/favicon.png" alt="ClinIQ" style={{ width: 72, height: 72, borderRadius: 18, marginBottom: 20 }} />
-        <div style={{ fontFamily: T.heading, fontSize: 28, color: T.text, marginBottom: 6 }}>ClinIQ</div>
-        <div style={{ fontFamily: T.mono, fontSize: 11, color: T.textMuted, marginBottom: 28, textTransform: 'uppercase', letterSpacing: 1.5 }}>{t('clinicalDecisionSupport')}</div>
-        <div style={{ fontSize: 15, color: T.textDim, marginBottom: 24 }}>Enter your name to get started</div>
-        <input
-          type="text" value={name} onChange={e => setName(e.target.value)}
-          placeholder="Dr. Your Name"
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, fontFamily: T.body }}>
+      <div className="cliniq-orb cliniq-orb-1" />
+      <div className="cliniq-orb cliniq-orb-2" />
+      <div style={{ ...glassCard, padding: '36px 28px', maxWidth: 440, width: '100%', position: 'relative', zIndex: 1 }}>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <img src="/favicon.png" alt="ClinIQ" style={{ width: 64, height: 64, borderRadius: 16, marginBottom: 16 }} />
+          <div style={{ fontSize: 26, fontWeight: 700, color: T.text, letterSpacing: -0.5 }}>ClinIQ</div>
+          <div style={{ fontSize: 12, color: T.textMuted, marginTop: 4 }}>Clinical Decision Support</div>
+        </div>
+
+        <div style={{ fontSize: 16, fontWeight: 600, color: T.text, marginBottom: 20 }}>Doctor Registration</div>
+
+        <div style={s.label}>Full Name</div>
+        <input type="text" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Dr. Your Full Name" style={fieldStyle} />
+
+        <div style={s.label}>NID Card Number</div>
+        <input type="text" value={form.nid} onChange={e => set('nid', e.target.value)} placeholder="National ID number" style={fieldStyle} inputMode="numeric" />
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <div style={s.label}>Session</div>
+            <input type="text" value={form.session} onChange={e => set('session', e.target.value)} placeholder="e.g. 2018-19" style={fieldStyle} />
+          </div>
+          <div>
+            <div style={s.label}>BMDC Reg. No.</div>
+            <input type="text" value={form.bmdc} onChange={e => set('bmdc', e.target.value)} placeholder="A-12345" style={fieldStyle} />
+          </div>
+        </div>
+
+        <div style={s.label}>Medical College</div>
+        <input type="text" value={form.college} onChange={e => set('college', e.target.value)} placeholder="e.g. Mymensingh Medical College"
           onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-          style={{ ...s.input, textAlign: 'center', fontSize: 16, marginBottom: 16 }}
-        />
-        <button style={{ ...s.btn(T.accent), width: '100%', padding: '14px 0', fontSize: 16 }} onClick={handleSubmit}>
-          Start
+          style={fieldStyle} />
+
+        {err && <div style={{ fontSize: 13, color: T.red, marginBottom: 12, textAlign: 'center' }}>{err}</div>}
+
+        <button style={{ ...s.btn(T.accent), width: '100%', padding: '14px 0', fontSize: 16, marginTop: 4 }} onClick={handleSubmit}>
+          Sign Up
         </button>
+
+        <div style={{ fontSize: 11, color: T.textMuted, textAlign: 'center', marginTop: 16, lineHeight: 1.5 }}>
+          By signing up, you confirm that you are a registered medical practitioner with a valid BMDC license.
+        </div>
       </div>
     </div>
   )
