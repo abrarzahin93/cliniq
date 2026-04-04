@@ -1,12 +1,14 @@
 {
-  "name": "ClinIQ — Clinical Decision Support",
+  "name": "ClinIQ",
   "short_name": "ClinIQ",
-  "description": "AI-assisted clinical decision support for doctors",
+  "description": "AI clinical decision support",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#060a14",
+  "background_color": "#030508",
   "theme_color": "#4da3ff",
   "icons": [
-    { "src": "/favicon.png", "sizes": "1024x1024", "type": "image/png" }
+    { "src": "/icon-64.png", "sizes": "64x64", "type": "image/png" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/favicon.png", "sizes": "512x512", "type": "image/png" }
   ]
 }

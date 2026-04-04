@@ -1,9 +1,9 @@
-const CACHE_NAME = 'cliniq-v6'
+const CACHE_NAME = 'cliniq-v7'
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
-      cache.addAll(['/', '/favicon.png', '/manifest.json', '/fonts/Canela-Medium.ttf'])
+      cache.addAll(['/', '/icon-64.png', '/icon-192.png', '/manifest.json'])
     )
   )
   self.skipWaiting()

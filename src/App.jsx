@@ -1817,7 +1817,7 @@ function WelcomeScreen({ onRegister, t }) {
       <div className="cliniq-orb cliniq-orb-2" />
       <div style={{ ...glassCard, padding: '36px 28px', maxWidth: 440, width: '100%', position: 'relative', zIndex: 1 }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <img src="/favicon.png" alt="ClinIQ" style={{ width: 64, height: 64, borderRadius: 16, marginBottom: 16 }} />
+          <img src="/icon-192.png" alt="ClinIQ" style={{ width: 64, height: 64, borderRadius: 16, marginBottom: 16 }} />
           <div style={{ fontSize: 26, fontWeight: 700, color: T.text, letterSpacing: -0.5 }}>ClinIQ</div>
           <div style={{ fontSize: 12, color: T.textMuted, marginTop: 4 }}>Clinical Decision Support</div>
         </div>
@@ -2283,7 +2283,7 @@ Do not include any text outside the JSON object.`
       {/* Header — Clean greeting */}
       <header style={s.header}>
         <div style={s.logo} onMouseDown={handleLogoDown} onMouseUp={handleLogoUp} onTouchStart={handleLogoDown} onTouchEnd={handleLogoUp}>
-          <img src="/favicon.png" alt="ClinIQ" style={s.logoIcon} />
+          <img src="/icon-192.png" alt="ClinIQ" style={s.logoIcon} />
           <div>
             <div style={{ fontSize: 14, color: T.textMuted, fontWeight: 400 }}>
               Hi, {(doctor?.name || 'Doctor').replace(/^Dr\.?\s*/i, '').split(' ')[0]}!
