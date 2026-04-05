@@ -1,5 +1,8 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
+import { memo, useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { createT } from './i18n.js'
+import { Field, InputField, TextareaField, ToggleGroup } from './components/Fields.jsx'
+import LandingPage from './components/LandingPage.jsx'
+import { sanitizeForPrompt, sanitizePatient } from './lib/sanitize.js'
 
 // ─── Lazy module cache ───────────────────────────────────────────────
 let _bdDrugs = null, _interactions = null, _clinicalTools = null, _exportTools = null
@@ -114,6 +117,22 @@ function applyTheme(mode) {
   if (typeof document !== 'undefined') {
     document.body.style.background = T.bg
     document.body.style.color = T.text
+    // Expose theme tokens as CSS variables so className-based styles can react to
+    // theme switches without needing to pass the T object through every component.
+    const r = document.documentElement.style
+    r.setProperty('--cq-bg', T.bg)
+    r.setProperty('--cq-text', T.text)
+    r.setProperty('--cq-text-dim', T.textDim)
+    r.setProperty('--cq-text-muted', T.textMuted)
+    r.setProperty('--cq-accent', T.accent)
+    r.setProperty('--cq-accent-dim', T.accentDim)
+    r.setProperty('--cq-glass', T.glass)
+    r.setProperty('--cq-glass-border', T.glassBorder)
+    r.setProperty('--cq-input-bg', T.inputBg)
+    r.setProperty('--cq-input-border', T.inputBorder)
+    r.setProperty('--cq-card-border', T.cardBorder)
+    r.setProperty('--cq-toggle-inactive-bg', T.toggleInactiveBg)
+    r.setProperty('--cq-toggle-inactive-text', T.toggleInactiveText)
   }
 }
 const blur = '40px'
@@ -132,7 +151,8 @@ let glassCard = getGlassCard()
 
 // ─── Styles ──────────────────────────────────────────────────────────
 const s = {
-  container: { maxWidth: 480, margin: '0 auto', padding: '12px 16px 100px', fontFamily: T.body, position: 'relative', zIndex: 1 },
+  // Width is controlled by the .cliniq-container CSS class (media queries in main.jsx)
+  container: { margin: '0 auto', padding: '12px 16px 100px', fontFamily: T.body, position: 'relative', zIndex: 1 },
   header: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '16px 4px', marginBottom: 8,
@@ -447,7 +467,10 @@ async function callClaude(systemPrompt, userMessage) {
   return JSON.parse(text)
 }
 
-function buildPatientSummary(p) {
+function buildPatientSummary(rawP) {
+  // Sanitize every string field (strip control chars, zero-width, markdown fences, cap length)
+  // before anything touches the LLM prompt. Defends against patient-text prompt injection.
+  const p = sanitizePatient(rawP) || {}
   const lines = []
   lines.push(`Patient: ${p.name || 'N/A'}, Age: ${p.age || 'N/A'}, Sex: ${p.sex || 'N/A'}, Weight: ${p.weight || 'N/A'} kg`)
   const vitals = []
@@ -498,175 +521,136 @@ function formatTime(iso) {
 }
 
 // ─── Components ──────────────────────────────────────────────────────
-function Field({ label, children }) {
-  return (
-    <div style={{ marginBottom: 14 }}>
-      <label style={s.label}>{label}</label>
-      {children}
-    </div>
-  )
-}
-
-function InputField({ label, value, onChange, placeholder, type = 'text' }) {
-  return (
-    <Field label={label}>
-      <input
-        type={type} value={value} onChange={e => onChange(e.target.value)}
-        placeholder={placeholder} style={s.input}
-        onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.background = 'rgba(255,255,255,0.07)' }}
-        onBlur={e => { e.target.style.borderColor = T.cardBorder; e.target.style.background = 'rgba(255,255,255,0.04)' }}
-      />
-    </Field>
-  )
-}
-
-function TextareaField({ label, value, onChange, placeholder, rows }) {
-  return (
-    <Field label={label}>
-      <textarea
-        value={value} onChange={e => onChange(e.target.value)}
-        placeholder={placeholder} style={{ ...s.textarea, minHeight: rows ? rows * 24 : 100 }}
-        onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.background = 'rgba(255,255,255,0.07)' }}
-        onBlur={e => { e.target.style.borderColor = T.cardBorder; e.target.style.background = 'rgba(255,255,255,0.04)' }}
-      />
-    </Field>
-  )
-}
-
-function ToggleGroup({ label, options, value, onChange }) {
-  return (
-    <Field label={label}>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        {options.map(opt => (
-          <button key={opt} style={{ ...s.toggle(value === opt), padding: '6px 14px', fontSize: 12 }} onClick={() => onChange(value === opt ? '' : opt)}>
-            {opt}
-          </button>
-        ))}
-      </div>
-    </Field>
-  )
-}
+// Field, InputField, TextareaField, ToggleGroup are imported from ./components/Fields.jsx
+// They use a stable (name, value) callback signature + React.memo to prevent re-render storms.
 
 // ─── Wizard Steps ────────────────────────────────────────────────────
-function Step1({ p, setP, t }) {
+// Each Step takes the patient object plus stable callbacks (onField, onGE) so that
+// React.memo on the field components can short-circuit untouched fields.
+const Step1 = memo(function Step1({ p, onField, t }) {
   return (
     <>
       <div style={s.stepTitle}>{t('step1Title')}</div>
-      <div className="cliniq-grid-2" style={s.grid(2)}>
-        <InputField label={t('patientName')} value={p.name} onChange={v => setP({ ...p, name: v })} placeholder={t('phFullName')} />
-        <InputField label={t('age')} value={p.age} onChange={v => setP({ ...p, age: v })} placeholder={t('phYears')} type="number" />
+      <div className="cliniq-grid-2">
+        <InputField name="name" label={t('patientName')} value={p.name} onChange={onField} placeholder={t('phFullName')} />
+        <InputField name="age" label={t('age')} value={p.age} onChange={onField} placeholder={t('phYears')} type="number" />
       </div>
       <Field label={t('sex')}>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div className="cliniq-toggle-group">
           {[['male', 'Male'], ['female', 'Female'], ['other', 'Other']].map(([key, val]) => (
-            <button key={val} style={s.toggle(p.sex === val)} onClick={() => setP({ ...p, sex: val })}>
+            <button
+              key={val}
+              type="button"
+              className={'cliniq-toggle' + (p.sex === val ? ' cliniq-toggle-active' : '')}
+              onClick={() => onField('sex', p.sex === val ? '' : val)}
+            >
               {t(key)}
             </button>
           ))}
         </div>
       </Field>
-      <InputField label={t('weightKg')} value={p.weight} onChange={v => setP({ ...p, weight: v })} placeholder={t('phKg')} type="number" />
+      <InputField name="weight" label={t('weightKg')} value={p.weight} onChange={onField} placeholder={t('phKg')} type="number" />
       <div style={{ ...s.stepTitle, marginTop: 16, fontSize: 12 }}>{t('vitals')}</div>
-      <div className="cliniq-grid-3" style={s.grid(3)}>
-        <InputField label={t('bloodPressure')} value={p.bp} onChange={v => setP({ ...p, bp: v })} placeholder={t('phBP')} />
-        <InputField label={t('pulseMin')} value={p.pulse} onChange={v => setP({ ...p, pulse: v })} placeholder="72" type="number" />
-        <InputField label={t('tempF')} value={p.temp} onChange={v => setP({ ...p, temp: v })} placeholder="98.6" />
+      <div className="cliniq-grid-3">
+        <InputField name="bp" label={t('bloodPressure')} value={p.bp} onChange={onField} placeholder={t('phBP')} />
+        <InputField name="pulse" label={t('pulseMin')} value={p.pulse} onChange={onField} placeholder="72" type="number" />
+        <InputField name="temp" label={t('tempF')} value={p.temp} onChange={onField} placeholder="98.6" />
       </div>
-      <div className="cliniq-grid-2" style={s.grid(2)}>
-        <InputField label={t('spo2Pct')} value={p.spo2} onChange={v => setP({ ...p, spo2: v })} placeholder="98" type="number" />
-        <InputField label={t('respRate')} value={p.rr} onChange={v => setP({ ...p, rr: v })} placeholder="16" type="number" />
+      <div className="cliniq-grid-2">
+        <InputField name="spo2" label={t('spo2Pct')} value={p.spo2} onChange={onField} placeholder="98" type="number" />
+        <InputField name="rr" label={t('respRate')} value={p.rr} onChange={onField} placeholder="16" type="number" />
       </div>
     </>
   )
-}
+})
 
-function Step2({ p, setP, t }) {
+const Step2 = memo(function Step2({ p, onField, t }) {
   return (
     <>
       <div style={s.stepTitle}>{t('step2Title')}</div>
       <TextareaField
+        name="complaints"
         label={t('chiefComplaints')}
-        value={p.complaints} onChange={v => setP({ ...p, complaints: v })}
+        value={p.complaints} onChange={onField}
         placeholder={t('phComplaints')}
         rows={6}
       />
     </>
   )
-}
+})
 
-function Step3({ p, setP, t }) {
+const Step3 = memo(function Step3({ p, onField, t }) {
   return (
     <>
       <div style={s.stepTitle}>{t('step3Title')}</div>
-      <TextareaField label={t('pastMedicalHistory')} value={p.pastHistory} onChange={v => setP({ ...p, pastHistory: v })} placeholder={t('phPastHistory')} rows={3} />
-      <TextareaField label={t('drugHistory')} value={p.drugHistory} onChange={v => setP({ ...p, drugHistory: v })} placeholder={t('phDrugHistory')} rows={3} />
-      <TextareaField label={t('investigationHistory')} value={p.investigations} onChange={v => setP({ ...p, investigations: v })} placeholder={t('phInvestigations')} rows={3} />
-      <TextareaField label={t('socialFamilyHistory')} value={p.socialFamily} onChange={v => setP({ ...p, socialFamily: v })} placeholder={t('phSocialFamily')} rows={3} />
+      <TextareaField name="pastHistory" label={t('pastMedicalHistory')} value={p.pastHistory} onChange={onField} placeholder={t('phPastHistory')} rows={3} />
+      <TextareaField name="drugHistory" label={t('drugHistory')} value={p.drugHistory} onChange={onField} placeholder={t('phDrugHistory')} rows={3} />
+      <TextareaField name="investigations" label={t('investigationHistory')} value={p.investigations} onChange={onField} placeholder={t('phInvestigations')} rows={3} />
+      <TextareaField name="socialFamily" label={t('socialFamilyHistory')} value={p.socialFamily} onChange={onField} placeholder={t('phSocialFamily')} rows={3} />
     </>
   )
-}
+})
 
-function Step4({ p, setP, t }) {
+const Step4 = memo(function Step4({ p, onGE, t }) {
   const ge = (typeof p.generalExam === 'object' && p.generalExam) ? p.generalExam : {}
-  const updateGE = (field, value) => setP({ ...p, generalExam: { ...ge, [field]: value } })
 
   return (
     <>
       <div style={s.stepTitle}>{t('step4Title')}</div>
 
       <div style={{ fontFamily: T.heading, fontSize: 15, color: T.textDim, marginBottom: 12 }}>{t('generalSurvey')}</div>
-      <div className="cliniq-grid-3" style={s.grid(3)}>
-        <ToggleGroup label={t('built')} options={[t('average'), t('thin'), t('obese')]} value={ge.built || ''} onChange={v => updateGE('built', v)} />
-        <ToggleGroup label={t('nourishment')} options={[t('well'), t('moderate'), t('poor')]} value={ge.nourishment || ''} onChange={v => updateGE('nourishment', v)} />
-        <InputField label={t('decubitus')} value={ge.decubitus || ''} onChange={v => updateGE('decubitus', v)} placeholder={t('phDecubitus')} />
+      <div className="cliniq-grid-3">
+        <ToggleGroup name="built" label={t('built')} options={[t('average'), t('thin'), t('obese')]} value={ge.built || ''} onChange={onGE} />
+        <ToggleGroup name="nourishment" label={t('nourishment')} options={[t('well'), t('moderate'), t('poor')]} value={ge.nourishment || ''} onChange={onGE} />
+        <InputField name="decubitus" label={t('decubitus')} value={ge.decubitus || ''} onChange={onGE} placeholder={t('phDecubitus')} />
       </div>
 
       <div style={{ fontFamily: T.heading, fontSize: 15, color: T.textDim, marginBottom: 12, marginTop: 8 }}>{t('inspectionFindings')}</div>
-      <div className="cliniq-grid-3" style={s.grid(3)}>
-        <ToggleGroup label={t('pallorAnaemia')} options={[t('absent'), t('mild'), t('moderate'), t('severe')]} value={ge.pallor || ''} onChange={v => updateGE('pallor', v)} />
-        <ToggleGroup label={t('jaundiceIcterus')} options={[t('absent'), t('present')]} value={ge.jaundice || ''} onChange={v => updateGE('jaundice', v)} />
-        <ToggleGroup label={t('cyanosis')} options={[t('absent'), t('peripheral'), t('central')]} value={ge.cyanosis || ''} onChange={v => updateGE('cyanosis', v)} />
-        <ToggleGroup label={t('clubbing')} options={[t('absent'), t('present')]} value={ge.clubbing || ''} onChange={v => updateGE('clubbing', v)} />
-        <ToggleGroup label={t('koilonychia')} options={[t('absent'), t('present')]} value={ge.koilonychia || ''} onChange={v => updateGE('koilonychia', v)} />
-        <ToggleGroup label={t('leukonychia')} options={[t('absent'), t('present')]} value={ge.leukonychia || ''} onChange={v => updateGE('leukonychia', v)} />
+      <div className="cliniq-grid-3">
+        <ToggleGroup name="pallor" label={t('pallorAnaemia')} options={[t('absent'), t('mild'), t('moderate'), t('severe')]} value={ge.pallor || ''} onChange={onGE} />
+        <ToggleGroup name="jaundice" label={t('jaundiceIcterus')} options={[t('absent'), t('present')]} value={ge.jaundice || ''} onChange={onGE} />
+        <ToggleGroup name="cyanosis" label={t('cyanosis')} options={[t('absent'), t('peripheral'), t('central')]} value={ge.cyanosis || ''} onChange={onGE} />
+        <ToggleGroup name="clubbing" label={t('clubbing')} options={[t('absent'), t('present')]} value={ge.clubbing || ''} onChange={onGE} />
+        <ToggleGroup name="koilonychia" label={t('koilonychia')} options={[t('absent'), t('present')]} value={ge.koilonychia || ''} onChange={onGE} />
+        <ToggleGroup name="leukonychia" label={t('leukonychia')} options={[t('absent'), t('present')]} value={ge.leukonychia || ''} onChange={onGE} />
       </div>
 
       <div style={{ fontFamily: T.heading, fontSize: 15, color: T.textDim, marginBottom: 12, marginTop: 8 }}>{t('otherFindings')}</div>
-      <div className="cliniq-grid-2" style={s.grid(2)}>
+      <div className="cliniq-grid-2">
         <div>
-          <ToggleGroup label={t('lymphadenopathy')} options={[t('absent'), t('present')]} value={ge.lymphadenopathy || ''} onChange={v => updateGE('lymphadenopathy', v)} />
+          <ToggleGroup name="lymphadenopathy" label={t('lymphadenopathy')} options={[t('absent'), t('present')]} value={ge.lymphadenopathy || ''} onChange={onGE} />
           {ge.lymphadenopathy === t('present') && (
-            <InputField label={t('lymphNodeDetails')} value={ge.lymphDetails || ''} onChange={v => updateGE('lymphDetails', v)} placeholder={t('phLymphDetails')} />
+            <InputField name="lymphDetails" label={t('lymphNodeDetails')} value={ge.lymphDetails || ''} onChange={onGE} placeholder={t('phLymphDetails')} />
           )}
         </div>
         <div>
-          <ToggleGroup label={t('edema')} options={[t('absent'), t('pitting'), t('nonPitting')]} value={ge.edema || ''} onChange={v => updateGE('edema', v)} />
+          <ToggleGroup name="edema" label={t('edema')} options={[t('absent'), t('pitting'), t('nonPitting')]} value={ge.edema || ''} onChange={onGE} />
           {ge.edema && ge.edema !== t('absent') && (
-            <InputField label={t('edemaLocation')} value={ge.edemaDetails || ''} onChange={v => updateGE('edemaDetails', v)} placeholder={t('phEdemaLocation')} />
+            <InputField name="edemaDetails" label={t('edemaLocation')} value={ge.edemaDetails || ''} onChange={onGE} placeholder={t('phEdemaLocation')} />
           )}
         </div>
       </div>
-      <div className="cliniq-grid-3" style={s.grid(3)}>
-        <ToggleGroup label={t('dehydration')} options={[t('none'), t('mild'), t('moderate'), t('severe')]} value={ge.dehydration || ''} onChange={v => updateGE('dehydration', v)} />
-        <ToggleGroup label={t('jvp')} options={[t('normal'), t('raised')]} value={ge.jvp || ''} onChange={v => updateGE('jvp', v)} />
-        <ToggleGroup label={t('thyroid')} options={[t('normal'), t('enlarged')]} value={ge.thyroid || ''} onChange={v => updateGE('thyroid', v)} />
+      <div className="cliniq-grid-3">
+        <ToggleGroup name="dehydration" label={t('dehydration')} options={[t('none'), t('mild'), t('moderate'), t('severe')]} value={ge.dehydration || ''} onChange={onGE} />
+        <ToggleGroup name="jvp" label={t('jvp')} options={[t('normal'), t('raised')]} value={ge.jvp || ''} onChange={onGE} />
+        <ToggleGroup name="thyroid" label={t('thyroid')} options={[t('normal'), t('enlarged')]} value={ge.thyroid || ''} onChange={onGE} />
       </div>
 
-      <TextareaField label={t('additionalNotes')} value={ge.otherFindings || ''} onChange={v => updateGE('otherFindings', v)} placeholder={t('phOtherFindings')} rows={3} />
+      <TextareaField name="otherFindings" label={t('additionalNotes')} value={ge.otherFindings || ''} onChange={onGE} placeholder={t('phOtherFindings')} rows={3} />
     </>
   )
-}
+})
 
-function Step5({ p, setP, t }) {
+const Step5 = memo(function Step5({ p, onField, t }) {
   return (
     <>
       <div style={s.stepTitle}>{t('step5Title')}</div>
-      <TextareaField label={t('respiratorySystem')} value={p.respiratory} onChange={v => setP({ ...p, respiratory: v })} placeholder={t('phRespiratory')} rows={3} />
-      <TextareaField label={t('abdominalExam')} value={p.abdominal} onChange={v => setP({ ...p, abdominal: v })} placeholder={t('phAbdominal')} rows={3} />
-      <TextareaField label={t('cnsCvs')} value={p.cnsCvs} onChange={v => setP({ ...p, cnsCvs: v })} placeholder={t('phCnsCvs')} rows={3} />
+      <TextareaField name="respiratory" label={t('respiratorySystem')} value={p.respiratory} onChange={onField} placeholder={t('phRespiratory')} rows={3} />
+      <TextareaField name="abdominal" label={t('abdominalExam')} value={p.abdominal} onChange={onField} placeholder={t('phAbdominal')} rows={3} />
+      <TextareaField name="cnsCvs" label={t('cnsCvs')} value={p.cnsCvs} onChange={onField} placeholder={t('phCnsCvs')} rows={3} />
     </>
   )
-}
+})
 
 const STEPS = [Step1, Step2, Step3, Step4, Step5]
 
@@ -1108,13 +1092,13 @@ function ClinicalCalculators() {
   const labResult = vals.labTest && vals.labVal ? interpretLab(vals.labTest, vals.labVal, vals.labSex || 'male') : null
 
   const calcs = [
-    { id: 'bmi', label: 'BMI', icon: '&#9878;' },
-    { id: 'gfr', label: 'eGFR', icon: '&#9763;' },
-    { id: 'iv', label: 'IV Fluid', icon: '&#9737;' },
-    { id: 'peds', label: 'Peds Dose', icon: '&#9762;' },
-    { id: 'curb', label: 'CURB-65', icon: '&#9733;' },
-    { id: 'gcs', label: 'GCS', icon: '&#9731;' },
-    { id: 'lab', label: 'Lab Interp', icon: '&#9879;' },
+    { id: 'bmi', label: 'BMI', icon: '\u2696' },
+    { id: 'gfr', label: 'eGFR', icon: '\u2623' },
+    { id: 'iv', label: 'IV Fluid', icon: '\u2609' },
+    { id: 'peds', label: 'Peds Dose', icon: '\u2622' },
+    { id: 'curb', label: 'CURB-65', icon: '\u2605' },
+    { id: 'gcs', label: 'GCS', icon: '\u2603' },
+    { id: 'lab', label: 'Lab Interp', icon: '\u2697' },
   ]
 
   return (
@@ -1123,13 +1107,14 @@ function ClinicalCalculators() {
       <div style={{ display: 'flex', gap: 6, marginBottom: activeCalc ? 12 : 0, flexWrap: 'wrap' }}>
         {calcs.map(c => (
           <button key={c.id} onClick={() => { setActiveCalc(activeCalc === c.id ? null : c.id); setVals({}) }}
-            style={{ ...s.toggle(activeCalc === c.id), padding: '6px 14px', fontSize: 12 }}
-            dangerouslySetInnerHTML={{ __html: `${c.icon} ${c.label}` }} />
+            style={{ ...s.toggle(activeCalc === c.id), padding: '6px 14px', fontSize: 12 }}>
+            {c.icon} {c.label}
+          </button>
         ))}
       </div>
       {activeCalc === 'bmi' && (
         <div className="cliniq-scale-in" style={{ ...s.card, padding: '14px 16px' }}>
-          <div className="cliniq-grid-2" style={s.grid(2)}>
+          <div className="cliniq-grid-2">
             <div><div style={s.label}>Weight (kg)</div><input type="number" value={vals.wt || ''} onChange={e => set('wt', e.target.value)} placeholder="70" style={{ ...s.input, fontSize: 15 }} /></div>
             <div><div style={s.label}>Height (cm)</div><input type="number" value={vals.ht || ''} onChange={e => set('ht', e.target.value)} placeholder="170" style={{ ...s.input, fontSize: 15 }} /></div>
           </div>
@@ -1141,7 +1126,7 @@ function ClinicalCalculators() {
       )}
       {activeCalc === 'gfr' && (
         <div className="cliniq-scale-in" style={{ ...s.card, padding: '14px 16px' }}>
-          <div className="cliniq-grid-3" style={s.grid(3)}>
+          <div className="cliniq-grid-3">
             <div><div style={s.label}>Creatinine (mg/dL)</div><input type="number" step="0.1" value={vals.cr || ''} onChange={e => set('cr', e.target.value)} placeholder="1.2" style={{ ...s.input, fontSize: 15 }} /></div>
             <div><div style={s.label}>Age</div><input type="number" value={vals.gfrAge || ''} onChange={e => set('gfrAge', e.target.value)} placeholder="45" style={{ ...s.input, fontSize: 15 }} /></div>
             <div><div style={s.label}>Sex</div>
@@ -1169,7 +1154,7 @@ function ClinicalCalculators() {
       )}
       {activeCalc === 'peds' && (
         <div className="cliniq-scale-in" style={{ ...s.card, padding: '14px 16px' }}>
-          <div className="cliniq-grid-2" style={s.grid(2)}>
+          <div className="cliniq-grid-2">
             <div><div style={s.label}>Drug</div>
               <select value={vals.pedDrug || ''} onChange={e => set('pedDrug', e.target.value)} style={{ ...s.input, fontSize: 14 }}>
                 <option value="">Select drug...</option>
@@ -1222,7 +1207,7 @@ function ClinicalCalculators() {
       )}
       {activeCalc === 'lab' && (
         <div className="cliniq-scale-in" style={{ ...s.card, padding: '14px 16px' }}>
-          <div className="cliniq-grid-2" style={s.grid(2)}>
+          <div className="cliniq-grid-2">
             <div><div style={s.label}>Test Name</div>
               <select value={vals.labTest || ''} onChange={e => set('labTest', e.target.value)} style={{ ...s.input, fontSize: 14 }}>
                 <option value="">Select...</option>
@@ -2010,8 +1995,15 @@ export default function App() {
   const t = useMemo(() => createT(lang), [lang])
   const bodyFont = lang === 'bn' ? T.bangla : T.body
 
-  // Apply theme on mount and change
-  useEffect(() => { applyTheme(themeMode) }, [themeMode])
+  // Apply theme on CHANGE only. First run is skipped because the module-level
+  // applyTheme() call at load time already initialized everything — and by the
+  // time this effect fires, React 19 dev mode has already frozen s.card after
+  // using it as a style prop, so a redundant Object.assign would crash.
+  const firstThemeRun = useRef(true)
+  useEffect(() => {
+    if (firstThemeRun.current) { firstThemeRun.current = false; return }
+    applyTheme(themeMode)
+  }, [themeMode])
 
   const [, forceRender] = useState(0)
   const toggleTheme = () => {
@@ -2042,10 +2034,22 @@ export default function App() {
   const handleRegister = (doc) => { setDoctor(doc); setPatientLog(loadPatientLogForDoctor(doc.id)) }
   const handleSignOut = () => { clearDoctor(); setDoctor(null) }
 
-  const [view, setView] = useState('consultation')
+  const [view, setView] = useState(() => loadDoctor() ? 'consultation' : 'landing')
   const [showDisclaimer, setShowDisclaimer] = useState(true)
   const [step, setStep] = useState(0)
   const [patient, setPatient] = useState(INITIAL_PATIENT)
+
+  // Stable field callbacks — identity never changes, so memoized InputField/TextareaField
+  // only re-render when their own `value` prop actually changes. Fixes typing lag.
+  const onPatientField = useCallback((name, value) => {
+    setPatient(prev => ({ ...prev, [name]: value }))
+  }, [])
+  const onPatientGE = useCallback((name, value) => {
+    setPatient(prev => ({
+      ...prev,
+      generalExam: { ...(typeof prev.generalExam === 'object' && prev.generalExam ? prev.generalExam : {}), [name]: value },
+    }))
+  }, [])
   const [phase, setPhase] = useState('intake')
   const [dxResult, setDxResult] = useState(null)
   const [txResult, setTxResult] = useState(null)
@@ -2076,6 +2080,10 @@ export default function App() {
   const [eduContent, setEduContent] = useState(null)
   const [eduLoading, setEduLoading] = useState(false)
 
+  // Fresh visitors see the marketing landing page first
+  if (!doctor && !showAdmin && view === 'landing') {
+    return <LandingPage onGetStarted={() => setView('signup')} />
+  }
   // Show welcome screen if no doctor registered
   if (!doctor && !showAdmin) return <WelcomeScreen onRegister={handleRegister} t={t} />
   // Show admin panel
@@ -2271,7 +2279,7 @@ Do not include any text outside the JSON object.`
   ].filter(tb => tb.show)
 
   return (
-    <div style={{ ...s.container, fontFamily: bodyFont }}>
+    <div className="cliniq-container" style={{ ...s.container, fontFamily: bodyFont }}>
       {/* Ambient gradient orbs for depth */}
       <div className="cliniq-orb cliniq-orb-1" />
       <div className="cliniq-orb cliniq-orb-2" />
@@ -2368,7 +2376,7 @@ Do not include any text outside the JSON object.`
                 ))}
               </div>
               <div key={step} className="cliniq-fade-in" style={s.card}>
-                <StepComponent p={patient} setP={setPatient} t={t} />
+                <StepComponent p={patient} onField={onPatientField} onGE={onPatientGE} t={t} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                 <button
