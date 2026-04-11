@@ -2031,8 +2031,20 @@ export default function App() {
   const handleLogoDown = () => { logoPressTimer.current = setTimeout(() => setShowAdmin(true), 3000) }
   const handleLogoUp = () => { clearTimeout(logoPressTimer.current) }
 
-  const handleRegister = (doc) => { setDoctor(doc); setPatientLog(loadPatientLogForDoctor(doc.id)) }
-  const handleSignOut = () => { clearDoctor(); setDoctor(null) }
+  // CRITICAL: after register, force view back to 'consultation'. Otherwise view
+  // remains stuck on 'signup' (set when the user clicked "Get started" on the
+  // landing page), and the JSX guards `{view === 'consultation' && ...}` render
+  // a blank body with just the header + bottom nav.
+  const handleRegister = (doc) => {
+    setDoctor(doc)
+    setPatientLog(loadPatientLogForDoctor(doc.id))
+    setView('consultation')
+  }
+  const handleSignOut = () => {
+    clearDoctor()
+    setDoctor(null)
+    setView('landing')
+  }
 
   const [view, setView] = useState(() => loadDoctor() ? 'consultation' : 'landing')
   const [showDisclaimer, setShowDisclaimer] = useState(true)
